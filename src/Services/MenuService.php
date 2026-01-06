@@ -176,7 +176,7 @@ class MenuService {
 			if ( $primary_menu ) {
 				// Register primary submenu as top-level menu.
 				add_menu_page(
-					$primary_menu['title'],
+					'Flux Suite',
 					$primary_menu['title'],
 					$primary_menu['capability'],
 					$primary_menu['slug'],
@@ -241,7 +241,7 @@ class MenuService {
 		 * @since 1.0.0
 		 * @param array $candidates Array of menu candidates (passed by reference).
 		 */
-		do_action_ref_array( 'flux_suite/menu_service/collect_primary_candidates', [ &$all_candidates ] );
+		do_action_ref_array( 'flux_suite/menu_service/get_primary_menu_candidate', [ &$all_candidates ] );
 
 		// Also include candidates from this instance.
 		$all_candidates = array_merge( $all_candidates, self::$primary_submenu_candidates );
