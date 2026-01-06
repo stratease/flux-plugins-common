@@ -9,7 +9,7 @@
 namespace FluxPlugins\Common;
 
 use FluxPlugins\Common\Account\AccountIdService;
-use FluxPlugins\Common\WordPress\MenuService;
+use FluxPlugins\Common\Services\MenuService;
 
 /**
  * Main Flux Plugins initialization service.

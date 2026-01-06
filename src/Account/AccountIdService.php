@@ -7,7 +7,6 @@
  */
 
 namespace FluxPlugins\Common\Account;
-
 /**
  * Account ID service.
  *
@@ -56,6 +55,21 @@ class AccountIdService {
 	}
 
 	/**
+	 * Call WordPress function from global namespace.
+	 *
+	 * Helper method to ensure WordPress functions are called from global namespace,
+	 * bypassing Strauss namespace prefixing issues.
+	 *
+	 * @since 1.0.0
+	 * @param string $function_name Function name.
+	 * @param mixed  ...$args       Function arguments.
+	 * @return mixed Function return value.
+	 */
+	private function call_wp_func( $function_name, ...$args ) {
+		return \call_user_func_array( $function_name, $args );
+	}
+
+	/**
 	 * Get account ID.
 	 *
 	 * Retrieves the account ID from options, generating it if it doesn't exist.
@@ -64,7 +78,7 @@ class AccountIdService {
 	 * @return string Account ID (UUID) or empty string if not set.
 	 */
 	public function get_account_id() {
-		$account_id = get_site_option( self::OPTION_NAME, '' );
+		$account_id = $this->call_wp_func( 'get_site_option', self::OPTION_NAME, '' );
 
 		if ( empty( $account_id ) ) {
 			$account_id = $this->ensure_account_id();
@@ -82,11 +96,11 @@ class AccountIdService {
 	 * @return string Account ID (UUID).
 	 */
 	public function ensure_account_id() {
-		$account_id = get_site_option( self::OPTION_NAME, '' );
+		$account_id = $this->call_wp_func( 'get_site_option', self::OPTION_NAME, '' );
 
 		if ( empty( $account_id ) ) {
 			$account_id = $this->generate_uuid();
-			update_site_option( self::OPTION_NAME, $account_id );
+			$this->call_wp_func( 'update_site_option', self::OPTION_NAME, $account_id );
 		}
 
 		return $account_id;
@@ -100,15 +114,15 @@ class AccountIdService {
 	 */
 	private function generate_uuid() {
 		// Use WordPress's wp_generate_uuid4() if available (WP 6.1+), otherwise generate manually.
-		if ( function_exists( 'wp_generate_uuid4' ) ) {
-			return wp_generate_uuid4();
+		if ( $this->call_wp_func( 'function_exists', 'wp_generate_uuid4' ) ) {
+			return $this->call_wp_func( 'wp_generate_uuid4' );
 		}
 
 		// Fallback UUID v4 generation.
-		$data = random_bytes( 16 );
-		$data[6] = chr( ord( $data[6] ) & 0x0f | 0x40 ); // Set version to 0100.
-		$data[8] = chr( ord( $data[8] ) & 0x3f | 0x80 ); // Set bits 6-7 to 10.
-		return vsprintf( '%s%s-%s-%s-%s-%s%s%s', str_split( bin2hex( $data ), 4 ) );
+		$data = \random_bytes( 16 );
+		$data[6] = \chr( \ord( $data[6] ) & 0x0f | 0x40 ); // Set version to 0100.
+		$data[8] = \chr( \ord( $data[8] ) & 0x3f | 0x80 ); // Set bits 6-7 to 10.
+		return \vsprintf( '%s%s-%s-%s-%s-%s%s%s', \str_split( \bin2hex( $data ), 4 ) );
 	}
 }
 

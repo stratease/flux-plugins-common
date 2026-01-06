@@ -10,8 +10,8 @@ The `MenuService` provides centralized WordPress admin menu registration for the
 
 Since each plugin uses Strauss to namespace-prefix this library, each plugin has its own isolated copy of the library classes. For example:
 
-- Plugin A: `FluxMedia\Common\WordPress\MenuService`
-- Plugin B: `FluxOther\Common\WordPress\MenuService`
+- Plugin A: `FluxMedia\Common\Services\MenuService`
+- Plugin B: `FluxOther\Common\Services\MenuService`
 
 These are completely separate classes with separate singleton instances. This means:
 
@@ -53,7 +53,7 @@ The `MenuService` is automatically initialized by `FluxPlugins::init()`. You typ
 ### Register Plugin-Specific Submenu
 
 ```php
-use FluxPlugins\Common\WordPress\MenuService;
+use FluxPlugins\Common\Services\MenuService;
 
 $menu_service = MenuService::get_instance();
 $menu_service->register_submenu_page(
@@ -67,7 +67,7 @@ $menu_service->register_submenu_page(
 ### Register Settings Tab
 
 ```php
-use FluxPlugins\Common\WordPress\MenuService;
+use FluxPlugins\Common\Services\MenuService;
 
 $menu_service = MenuService::get_instance();
 $menu_service->register_settings_page(
