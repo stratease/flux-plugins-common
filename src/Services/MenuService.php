@@ -95,6 +95,18 @@ class MenuService {
 	const LOGS_PAGE_SLUG = 'flux-suite-logs';
 
 	/**
+	 * Primary submenu candidates (per-request, shared across plugins).
+	 *
+	 * Stores submenu pages that should become the primary menu item.
+	 * The one with the lowest placement number becomes the primary menu.
+	 * Uses WordPress action hook to track candidates across all plugin instances.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	private static $primary_submenu_candidates = [];
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @since 1.0.0
@@ -134,12 +146,15 @@ class MenuService {
 	/**
 	 * Register top-level menu.
 	 *
-	 * Ensures "Flux Suite" is registered (idempotent).
+	 * Ensures the primary menu is registered (idempotent). If a primary submenu candidate
+	 * exists (with placement), that becomes the top-level menu and "Flux Suite" becomes a submenu.
+	 * Otherwise, "Flux Suite" is the top-level menu.
+	 *
 	 * Uses WordPress action hooks to track registration state per request across all plugin instances,
 	 * since each plugin may have its own namespaced version of this library.
 	 *
 	 * **Action Hook:** `flux_suite/menu_service/register_top_level_menu`
-	 * - **Fired when:** The top-level "Flux Suite" menu is successfully registered
+	 * - **Fired when:** The top-level menu is successfully registered
 	 * - **Purpose:** Allows other code to detect when the menu has been registered
 	 * - **Scope:** Per-request, shared across all plugins regardless of namespace prefixing
 	 * - **Usage:** Use `did_action('flux_suite/menu_service/register_top_level_menu')` to check if menu is registered
@@ -155,20 +170,47 @@ class MenuService {
 
 		// Hook into admin_menu to register the menu.
 		add_action( 'admin_menu', function() {
-			add_menu_page(
-				__( 'Flux Suite', 'flux-plugins-common' ),
-				__( 'Flux Suite', 'flux-plugins-common' ),
-				'manage_options',
-				self::TOP_LEVEL_MENU_SLUG,
-				[ $this, 'render_top_level_page' ],
-				'dashicons-admin-generic',
-				self::MENU_PRIORITY
-			);
+			// Determine primary menu (submenu candidate with lowest placement, or "Flux Suite" as fallback).
+			$primary_menu = $this->get_primary_menu_candidate();
+
+			if ( $primary_menu ) {
+				// Register primary submenu as top-level menu.
+				add_menu_page(
+					$primary_menu['title'],
+					$primary_menu['title'],
+					$primary_menu['capability'],
+					$primary_menu['slug'],
+					$primary_menu['callback'],
+					'dashicons-admin-generic',
+					self::MENU_PRIORITY
+				);
+
+				// Register "Flux Suite" as a submenu under the primary menu.
+				add_submenu_page(
+					$primary_menu['slug'],
+					__( 'Flux Suite', 'flux-plugins-common' ),
+					__( 'Flux Suite', 'flux-plugins-common' ),
+					'manage_options',
+					self::TOP_LEVEL_MENU_SLUG,
+					[ $this, 'render_top_level_page' ]
+				);
+			} else {
+				// No primary submenu candidate, use "Flux Suite" as top-level menu.
+				add_menu_page(
+					__( 'Flux Suite', 'flux-plugins-common' ),
+					__( 'Flux Suite', 'flux-plugins-common' ),
+					'manage_options',
+					self::TOP_LEVEL_MENU_SLUG,
+					[ $this, 'render_top_level_page' ],
+					'dashicons-admin-generic',
+					self::MENU_PRIORITY
+				);
+			}
 		}, self::MENU_PRIORITY );
 
 		// Mark as registered using WordPress action hook (shared across all plugins).
 		/**
-		 * Fires when the top-level "Flux Suite" menu is registered.
+		 * Fires when the top-level menu is registered.
 		 *
 		 * This action is fired once per request after the menu is successfully registered.
 		 * It can be used by other code to detect when the menu registration has completed.
@@ -179,6 +221,44 @@ class MenuService {
 	}
 
 	/**
+	 * Get primary menu candidate.
+	 *
+	 * Returns the submenu candidate with the lowest placement number, or null if none exists.
+	 * Collects candidates from all plugins by checking the action hook.
+	 *
+	 * @since 1.0.0
+	 * @return array|null Primary menu candidate or null.
+	 */
+	private function get_primary_menu_candidate() {
+		// Collect candidates from all plugins via action hook.
+		$all_candidates = [];
+		
+		/**
+		 * Fires to collect primary menu candidates from all plugins.
+		 *
+		 * Plugins should add their candidates to the array passed by reference.
+		 *
+		 * @since 1.0.0
+		 * @param array $candidates Array of menu candidates (passed by reference).
+		 */
+		do_action_ref_array( 'flux_suite/menu_service/collect_primary_candidates', [ &$all_candidates ] );
+
+		// Also include candidates from this instance.
+		$all_candidates = array_merge( $all_candidates, self::$primary_submenu_candidates );
+
+		if ( empty( $all_candidates ) ) {
+			return null;
+		}
+
+		// Sort by placement (ascending) and return the first one.
+		usort( $all_candidates, function( $a, $b ) {
+			return $a['placement'] <=> $b['placement'];
+		} );
+
+		return $all_candidates[0];
+	}
+
+	/**
 	 * Register submenu page.
 	 *
 	 * @since 1.0.0
@@ -186,16 +266,47 @@ class MenuService {
 	 * @param string   $title     Menu title.
 	 * @param callable $callback  Page callback function.
 	 * @param string   $capability Required capability (default: 'manage_options').
+	 * @param int|null $placement Optional placement priority. If provided, this submenu becomes
+	 *                            a candidate for the primary menu (lower number = higher priority).
+	 *                            If placement is 1, it will be the primary menu item.
 	 * @return void
 	 */
-	public function register_submenu_page( $slug, $title, $callback, $capability = 'manage_options' ) {
+	public function register_submenu_page( $slug, $title, $callback, $capability = 'manage_options', $placement = null ) {
+		// If placement is provided, add to primary menu candidates.
+		if ( $placement !== null ) {
+			$candidate = [
+				'slug'       => $slug,
+				'title'      => $title,
+				'callback'   => $callback,
+				'capability' => $capability,
+				'placement'  => (int) $placement,
+			];
+
+			self::$primary_submenu_candidates[] = $candidate;
+
+			// Also register candidate via action hook so other plugin instances can see it.
+			add_action( 'flux_suite/menu_service/collect_primary_candidates', function( &$candidates ) use ( $candidate ) {
+				$candidates[] = $candidate;
+			}, 10, 1 );
+		}
+
 		// Ensure top-level menu is registered first.
 		$this->register_top_level_menu();
 
-		// Hook into admin_menu to register the submenu (must be called during admin_menu hook).
-		add_action( 'admin_menu', function() use ( $slug, $title, $callback, $capability ) {
+		// Hook into admin_menu to register the submenu.
+		add_action( 'admin_menu', function() use ( $slug, $title, $callback, $capability, $placement ) {
+			// Determine the parent menu slug (primary menu candidate or "Flux Suite").
+			$primary_menu = $this->get_primary_menu_candidate();
+			$parent_slug = $primary_menu ? $primary_menu['slug'] : self::TOP_LEVEL_MENU_SLUG;
+
+			// If this is the primary menu candidate, it's already registered as top-level, skip.
+			if ( $placement !== null && $primary_menu && $primary_menu['slug'] === $slug ) {
+				return;
+			}
+
+			// Register as submenu.
 			add_submenu_page(
-				self::TOP_LEVEL_MENU_SLUG,
+				$parent_slug,
 				$title,
 				$title,
 				$capability,
@@ -232,8 +343,12 @@ class MenuService {
 
 		// Hook into admin_menu to register the license page.
 		add_action( 'admin_menu', function() {
+			// Determine the parent menu slug (primary menu candidate or "Flux Suite").
+			$primary_menu = $this->get_primary_menu_candidate();
+			$parent_slug = $primary_menu ? $primary_menu['slug'] : self::TOP_LEVEL_MENU_SLUG;
+
 			add_submenu_page(
-				self::TOP_LEVEL_MENU_SLUG,
+				$parent_slug,
 				__( 'License', 'flux-plugins-common' ),
 				__( 'License', 'flux-plugins-common' ),
 				'manage_options',
@@ -281,8 +396,12 @@ class MenuService {
 
 		// Hook into admin_menu to register the logs page.
 		add_action( 'admin_menu', function() {
+			// Determine the parent menu slug (primary menu candidate or "Flux Suite").
+			$primary_menu = $this->get_primary_menu_candidate();
+			$parent_slug = $primary_menu ? $primary_menu['slug'] : self::TOP_LEVEL_MENU_SLUG;
+
 			add_submenu_page(
-				self::TOP_LEVEL_MENU_SLUG,
+				$parent_slug,
 				__( 'Logs', 'flux-plugins-common' ),
 				__( 'Logs', 'flux-plugins-common' ),
 				'manage_options',
@@ -351,8 +470,12 @@ class MenuService {
 
 		// Register settings page (hook into admin_menu).
 		add_action( 'admin_menu', function() {
+			// Determine the parent menu slug (primary menu candidate or "Flux Suite").
+			$primary_menu = $this->get_primary_menu_candidate();
+			$parent_slug = $primary_menu ? $primary_menu['slug'] : self::TOP_LEVEL_MENU_SLUG;
+
 			add_submenu_page(
-				self::TOP_LEVEL_MENU_SLUG,
+				$parent_slug,
 				__( 'Settings', 'flux-plugins-common' ),
 				__( 'Settings', 'flux-plugins-common' ),
 				'manage_options',
