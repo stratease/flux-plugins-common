@@ -33,6 +33,25 @@ This approach leverages WordPress's built-in hook system as the shared service l
 - It uses WordPress's native hook system
 - It's more efficient for request-scoped operations
 
+### Hook Naming Convention
+
+All hooks follow the pattern: `{plugin_namespace}/{class_name}/{method_name}`
+
+- **Plugin Namespace**: `flux_suite` - Identifies the Flux Plugins suite
+- **Class Name**: The class name in snake_case (e.g., `MenuService` -> `menu_service`)
+- **Method Name**: The method name that fires the hook (e.g., `register_top_level_menu`)
+
+For more refined callbacks within a method, append `/{operation}`:
+- `{plugin_namespace}/{class_name}/{method_name}/{operation}`
+
+**Menu Service Hooks:**
+- `flux_suite/menu_service/register_top_level_menu` - Fired when top-level menu is registered
+- `flux_suite/menu_service/register_license_page` - Fired when License page is registered
+- `flux_suite/menu_service/register_logs_page` - Fired when Logs page is registered
+- `flux_suite/menu_service/register_settings_page` - Fired when Settings page is registered
+
+This convention makes hook names intuitive and directly traceable to the class and method that fires them, improving code discoverability and maintainability.
+
 ## Installation
 
 Add this repository as a VCS dependency in your plugin's `composer.json`:

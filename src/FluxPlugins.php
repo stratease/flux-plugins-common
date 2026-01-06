@@ -70,8 +70,8 @@ class FluxPlugins {
 	/**
 	 * Initialize Flux Plugins common library.
 	 *
-	 * Hooks into WordPress 'init' action to ensure core systems are initialized first.
-	 * This method registers the initialization callback and should be called early in the plugin lifecycle.
+	 * Hooks into WordPress 'init' and 'admin_init' actions to ensure core systems are initialized first.
+	 * This method registers the initialization callbacks and should be called early in the plugin lifecycle.
 	 *
 	 * @since 1.0.0
 	 * @param string $plugin_slug    Plugin slug (e.g., 'flux-media-optimizer').
@@ -83,48 +83,58 @@ class FluxPlugins {
 		$instance->plugin_slug    = $plugin_slug;
 		$instance->plugin_version = $plugin_version;
 
-		// Hook into WordPress 'init' action to ensure core systems are initialized first.
+		// Hook into WordPress 'init' action for general initialization (account ID, etc.).
 		add_action( 'init', [ $instance, 'do_init' ], 10 );
+
+		// Hook into WordPress 'admin_init' action for admin-specific initialization (menus, etc.).
+		add_action( 'admin_init', [ $instance, 'do_admin_init' ], 10 );
 	}
 
 	/**
-	 * Perform initialization after WordPress core is ready.
+	 * Perform general initialization after WordPress core is ready.
 	 *
-	 * This method is called on the 'init' hook and performs the actual initialization:
+	 * This method is called on the 'init' hook and performs general initialization:
 	 * - Ensures account ID exists (via AccountIdService)
-	 * - Registers top-level "Flux Suite" menu (via MenuService)
-	 * - Registers License page (via MenuService)
-	 * - Registers Logs page (via MenuService)
-	 * - Initializes Logger with plugin slug (when Logger service is available)
 	 *
 	 * This method is idempotent and can be called multiple times safely.
 	 * Note: Since each plugin may have its own namespaced version of this library,
 	 * the singleton pattern doesn't work across plugins. However, the underlying
-	 * services (MenuService, AccountIdService) use WordPress action hooks to track
-	 * shared state, ensuring pages only appear once even when multiple plugins
-	 * call this method.
+	 * services use WordPress action hooks to track shared state.
 	 *
 	 * @since 1.0.0
 	 * @return void
 	 */
 	public function do_init() {
-		// Ensure account ID exists.
+		// Ensure account ID exists (available in all contexts: admin, frontend, WP-CLI).
 		$account_service = AccountIdService::get_instance();
 		$account_service->ensure_account_id();
 
+		// TODO: Initialize Logger with plugin slug when Logger service is available.
+		// Logger::get_instance()->init( $this->plugin_slug );
+	}
+
+	/**
+	 * Perform admin-specific initialization after WordPress admin is ready.
+	 *
+	 * This method is called on the 'admin_init' hook and performs admin-specific initialization:
+	 * - Registers top-level "Flux Suite" menu (via MenuService)
+	 * - Registers License page (via MenuService)
+	 * - Registers Logs page (via MenuService)
+	 *
+	 * This method only runs in admin context, not in WP-CLI or frontend.
+	 * This method is idempotent and can be called multiple times safely.
+	 * Note: Since each plugin may have its own namespaced version of this library,
+	 * the singleton pattern doesn't work across plugins. However, the underlying
+	 * services (MenuService) use WordPress action hooks to track shared state,
+	 * ensuring pages only appear once even when multiple plugins call this method.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function do_admin_init() {
 		// Initialize menu service.
 		$menu_service = MenuService::get_instance();
 		$menu_service->init();
-
-		// Register required pages.
-		// These methods use WordPress action hooks internally to ensure they only register once,
-		// even when called from multiple plugins with different namespaces.
-		$menu_service->register_top_level_menu();
-		$menu_service->register_license_page();
-		$menu_service->register_logs_page();
-
-		// TODO: Initialize Logger with plugin slug when Logger service is available.
-		// Logger::get_instance()->init( $this->plugin_slug );
 	}
 }
 

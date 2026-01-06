@@ -63,7 +63,7 @@ class AccountIdService {
 	 * @return string Account ID (UUID) or empty string if not set.
 	 */
 	public function get_account_id() {
-		$account_id = \get_site_option( self::OPTION_NAME, '' );
+		$account_id = get_site_option( self::OPTION_NAME, '' );
 
 		if ( empty( $account_id ) ) {
 			$account_id = $this->ensure_account_id();
@@ -81,11 +81,11 @@ class AccountIdService {
 	 * @return string Account ID (UUID).
 	 */
 	public function ensure_account_id() {
-		$account_id = \get_site_option( self::OPTION_NAME, '' );
+		$account_id = get_site_option( self::OPTION_NAME, '' );
 
 		if ( empty( $account_id ) ) {
 			$account_id = $this->generate_uuid();
-			\update_site_option( self::OPTION_NAME, $account_id );
+			update_site_option( self::OPTION_NAME, $account_id );
 		}
 
 		return $account_id;
@@ -99,15 +99,15 @@ class AccountIdService {
 	 */
 	private function generate_uuid() {
 		// Use WordPress's wp_generate_uuid4() if available (WP 6.1+), otherwise generate manually.
-		if ( \function_exists( 'wp_generate_uuid4' ) ) {
-			return \wp_generate_uuid4();
+		if ( function_exists( 'wp_generate_uuid4' ) ) {
+			return wp_generate_uuid4();
 		}
 
 		// Fallback UUID v4 generation.
-		$data = \random_bytes( 16 );
-		$data[6] = \chr( \ord( $data[6] ) & 0x0f | 0x40 ); // Set version to 0100.
-		$data[8] = \chr( \ord( $data[8] ) & 0x3f | 0x80 ); // Set bits 6-7 to 10.
-		return \vsprintf( '%s%s-%s-%s-%s-%s%s%s', \str_split( \bin2hex( $data ), 4 ) );
+		$data = random_bytes( 16 );
+		$data[6] = chr( ord( $data[6] ) & 0x0f | 0x40 ); // Set version to 0100.
+		$data[8] = chr( ord( $data[8] ) & 0x3f | 0x80 ); // Set bits 6-7 to 10.
+		return vsprintf( '%s%s-%s-%s-%s-%s%s%s', str_split( bin2hex( $data ), 4 ) );
 	}
 }
 
