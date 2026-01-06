@@ -1,0 +1,24 @@
+{
+    "name": "stratease/flux-plugins-common",
+    "description": "Shared library for Flux Plugins suite providing common services, React components, and infrastructure.",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Flux Plugins",
+            "email": "eddie@fluxplugins.com",
+            "homepage": "https://fluxplugins.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "FluxPlugins\\Common\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
+
