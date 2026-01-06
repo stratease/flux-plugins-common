@@ -92,21 +92,6 @@ class MenuService {
 	}
 
 	/**
-	 * Call WordPress function from global namespace.
-	 *
-	 * Helper method to ensure WordPress functions are called from global namespace,
-	 * bypassing Strauss namespace prefixing issues.
-	 *
-	 * @since 1.0.0
-	 * @param string $function_name Function name.
-	 * @param mixed  ...$args       Function arguments.
-	 * @return mixed Function return value.
-	 */
-	private function call_wp_func( $function_name, ...$args ) {
-		return \call_user_func_array( $function_name, $args );
-	}
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 1.0.0
@@ -124,7 +109,7 @@ class MenuService {
 	 * @return void
 	 */
 	public function init() {
-		$this->call_wp_func( 'add_action', 'admin_menu', [ $this, 'register_menus' ], self::MENU_PRIORITY );
+		\add_action( 'admin_menu', [ $this, 'register_menus' ], self::MENU_PRIORITY );
 	}
 
 	/**
@@ -156,14 +141,13 @@ class MenuService {
 	 */
 	public function register_top_level_menu() {
 		// Ensure this menu is registered only once per request (shared across all plugins).
-		if ( $this->call_wp_func( 'did_action', 'flux_suite/common/menu_registered' ) ) {
+		if ( \did_action( 'flux_suite/common/menu_registered' ) ) {
 			return;
 		}
 
-		$this->call_wp_func(
-			'add_menu_page',
-			$this->call_wp_func( '__', 'Flux Suite', 'flux-plugins-common' ),
-			$this->call_wp_func( '__', 'Flux Suite', 'flux-plugins-common' ),
+		\add_menu_page(
+			\__( 'Flux Suite', 'flux-plugins-common' ),
+			\__( 'Flux Suite', 'flux-plugins-common' ),
 			'manage_options',
 			self::TOP_LEVEL_MENU_SLUG,
 			[ $this, 'render_top_level_page' ],
@@ -180,7 +164,7 @@ class MenuService {
 		 *
 		 * @since 1.0.0
 		 */
-		$this->call_wp_func( 'do_action', 'flux_suite/common/menu_registered' );
+		\do_action( 'flux_suite/common/menu_registered' );
 	}
 
 	/**
@@ -197,8 +181,7 @@ class MenuService {
 		// Ensure top-level menu is registered first.
 		$this->register_top_level_menu();
 
-		$this->call_wp_func(
-			'add_submenu_page',
+		\add_submenu_page(
 			self::TOP_LEVEL_MENU_SLUG,
 			$title,
 			$title,
@@ -226,18 +209,17 @@ class MenuService {
 	 */
 	public function register_license_page() {
 		// Ensure this page is registered only once per request (shared across all plugins).
-		if ( $this->call_wp_func( 'did_action', 'flux_suite/common/license_page_registered' ) ) {
+		if ( \did_action( 'flux_suite/common/license_page_registered' ) ) {
 			return;
 		}
 
 		// Ensure top-level menu is registered first.
 		$this->register_top_level_menu();
 
-		$this->call_wp_func(
-			'add_submenu_page',
+		\add_submenu_page(
 			self::TOP_LEVEL_MENU_SLUG,
-			$this->call_wp_func( '__', 'License', 'flux-plugins-common' ),
-			$this->call_wp_func( '__', 'License', 'flux-plugins-common' ),
+			\__( 'License', 'flux-plugins-common' ),
+			\__( 'License', 'flux-plugins-common' ),
 			'manage_options',
 			self::LICENSE_PAGE_SLUG,
 			[ $this, 'render_license_page' ]
@@ -252,7 +234,7 @@ class MenuService {
 		 *
 		 * @since 1.0.0
 		 */
-		$this->call_wp_func( 'do_action', 'flux_suite/common/license_page_registered' );
+		\do_action( 'flux_suite/common/license_page_registered' );
 	}
 
 	/**
@@ -273,18 +255,17 @@ class MenuService {
 	 */
 	public function register_logs_page() {
 		// Ensure this page is registered only once per request (shared across all plugins).
-		if ( $this->call_wp_func( 'did_action', 'flux_suite/common/logs_page_registered' ) ) {
+		if ( \did_action( 'flux_suite/common/logs_page_registered' ) ) {
 			return;
 		}
 
 		// Ensure top-level menu is registered first.
 		$this->register_top_level_menu();
 
-		$this->call_wp_func(
-			'add_submenu_page',
+		\add_submenu_page(
 			self::TOP_LEVEL_MENU_SLUG,
-			$this->call_wp_func( '__', 'Logs', 'flux-plugins-common' ),
-			$this->call_wp_func( '__', 'Logs', 'flux-plugins-common' ),
+			\__( 'Logs', 'flux-plugins-common' ),
+			\__( 'Logs', 'flux-plugins-common' ),
 			'manage_options',
 			self::LOGS_PAGE_SLUG,
 			[ $this, 'render_logs_page' ]
@@ -299,7 +280,7 @@ class MenuService {
 		 *
 		 * @since 1.0.0
 		 */
-		$this->call_wp_func( 'do_action', 'flux_suite/common/logs_page_registered' );
+		\do_action( 'flux_suite/common/logs_page_registered' );
 	}
 
 	/**
@@ -333,12 +314,11 @@ class MenuService {
 		$this->register_top_level_menu();
 
 		// Register settings page if not already registered.
-		if ( ! $this->call_wp_func( 'did_action', 'flux_suite/common/settings_page_registered' ) ) {
-			$this->call_wp_func(
-				'add_submenu_page',
+		if ( ! \did_action( 'flux_suite/common/settings_page_registered' ) ) {
+			\add_submenu_page(
 				self::TOP_LEVEL_MENU_SLUG,
-				$this->call_wp_func( '__', 'Settings', 'flux-plugins-common' ),
-				$this->call_wp_func( '__', 'Settings', 'flux-plugins-common' ),
+				\__( 'Settings', 'flux-plugins-common' ),
+				\__( 'Settings', 'flux-plugins-common' ),
 				'manage_options',
 				self::SETTINGS_PAGE_SLUG,
 				[ $this, 'render_settings_page' ]
@@ -354,7 +334,7 @@ class MenuService {
 			 *
 			 * @since 1.0.0
 			 */
-			$this->call_wp_func( 'do_action', 'flux_suite/common/settings_page_registered' );
+			\do_action( 'flux_suite/common/settings_page_registered' );
 		}
 
 		// Add tab to collection (stored in static property, shared across all plugin instances).
@@ -384,8 +364,8 @@ class MenuService {
 	 */
 	public function render_top_level_page() {
 		// Default redirect to first submenu or settings page.
-		$redirect_url = $this->call_wp_func( 'admin_url', 'admin.php?page=' . self::SETTINGS_PAGE_SLUG );
-		$this->call_wp_func( 'wp_safe_redirect', $redirect_url );
+		$redirect_url = \admin_url( 'admin.php?page=' . self::SETTINGS_PAGE_SLUG );
+		\wp_safe_redirect( $redirect_url );
 		exit;
 	}
 
@@ -398,7 +378,7 @@ class MenuService {
 	public function render_license_page() {
 		// TODO: Render React LicensePage component.
 		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . $this->call_wp_func( 'esc_html__', 'License', 'flux-plugins-common' ) . '</h1></div>';
+		echo '<div class="wrap"><h1>' . \esc_html__( 'License', 'flux-plugins-common' ) . '</h1></div>';
 	}
 
 	/**
@@ -410,7 +390,7 @@ class MenuService {
 	public function render_logs_page() {
 		// TODO: Render React LogsPage component.
 		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . $this->call_wp_func( 'esc_html__', 'Logs', 'flux-plugins-common' ) . '</h1></div>';
+		echo '<div class="wrap"><h1>' . \esc_html__( 'Logs', 'flux-plugins-common' ) . '</h1></div>';
 	}
 
 	/**
@@ -422,7 +402,7 @@ class MenuService {
 	public function render_settings_page() {
 		// TODO: Render React SettingsPage component with tabs.
 		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . $this->call_wp_func( 'esc_html__', 'Settings', 'flux-plugins-common' ) . '</h1></div>';
+		echo '<div class="wrap"><h1>' . \esc_html__( 'Settings', 'flux-plugins-common' ) . '</h1></div>';
 	}
 }
 

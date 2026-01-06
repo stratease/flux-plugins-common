@@ -1,6 +1,5 @@
 # Composer
 /vendor/
-composer.lock
 
 # IDE
 .idea/
@@ -15,9 +14,4 @@ Thumbs.db
 
 # Build artifacts
 node_modules/
-*.log
-
-# WordPress
-wp-config.php
-wp-content/uploads/
 
