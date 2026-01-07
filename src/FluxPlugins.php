@@ -82,7 +82,7 @@ class FluxPlugins {
 	 */
 	public static function init( $plugin_slug, $plugin_version ) {
 		// Load constants first.
-		require_once dirname( __DIR__ ) . '/includes/constants.php';
+		require_once __DIR__ . '/includes/constants.php';
 
 		$instance = self::get_instance();
 		$instance->plugin_slug    = $plugin_slug;
