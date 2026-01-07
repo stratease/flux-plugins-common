@@ -107,6 +107,16 @@ class MenuService {
 	private static $primary_submenu_candidates = [];
 
 	/**
+	 * Whether top-level menu hook has been registered.
+	 *
+	 * Prevents multiple hooks into admin_menu for the same menu registration.
+	 *
+	 * @since 1.0.0
+	 * @var bool
+	 */
+	private static $top_level_menu_hooked = false;
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @since 1.0.0
@@ -161,13 +171,20 @@ class MenuService {
 	 * @return void
 	 */
 	public function register_top_level_menu() {
-		// Ensure this menu is registered only once per request (shared across all plugins).
-		if ( did_action( 'flux_suite/menu_service/register_top_level_menu' ) ) {
+		// Ensure this menu hook is registered only once per request (shared across all plugins).
+		if ( self::$top_level_menu_hooked ) {
 			return;
 		}
 
+		// Mark as hooked to prevent duplicate hooks.
+		self::$top_level_menu_hooked = true;
+
 		// Hook into admin_menu to register the menu.
 		add_action( 'admin_menu', function() {
+			// Ensure this menu is registered only once (check action hook).
+			if ( did_action( 'flux_suite/menu_service/register_top_level_menu' ) ) {
+				return;
+			}
 			// Always register "Flux Suite" as top-level menu.
 			add_menu_page(
 				__( 'Flux Suite', 'flux-plugins-common' ),
@@ -178,18 +195,19 @@ class MenuService {
 				'dashicons-admin-generic',
 				self::MENU_PRIORITY
 			);
-		}, self::MENU_PRIORITY );
 
-		// Mark as registered using WordPress action hook (shared across all plugins).
-		/**
-		 * Fires when the top-level menu is registered.
-		 *
-		 * This action is fired once per request after the menu is successfully registered.
-		 * It can be used by other code to detect when the menu registration has completed.
-		 *
-		 * @since 1.0.0
-		 */
-		do_action( 'flux_suite/menu_service/register_top_level_menu' );
+			// Mark as registered using WordPress action hook (shared across all plugins).
+			// This must be called AFTER the menu is actually registered.
+			/**
+			 * Fires when the top-level menu is registered.
+			 *
+			 * This action is fired once per request after the menu is successfully registered.
+			 * It can be used by other code to detect when the menu registration has completed.
+			 *
+			 * @since 1.0.0
+			 */
+			do_action( 'flux_suite/menu_service/register_top_level_menu' );
+		}, self::MENU_PRIORITY );
 	}
 
 	/**
@@ -318,18 +336,19 @@ class MenuService {
 				self::LICENSE_PAGE_SLUG,
 				[ $this, 'render_license_page' ]
 			);
-		}, self::MENU_PRIORITY + 1 );
 
-		// Mark as registered using WordPress action hook (shared across all plugins).
-		/**
-		 * Fires when the shared License page is registered.
-		 *
-		 * This action is fired once per request after the License page is successfully registered.
-		 * It can be used by other code to detect when the License page registration has completed.
-		 *
-		 * @since 1.0.0
-		 */
-		do_action( 'flux_suite/menu_service/register_license_page' );
+			// Mark as registered using WordPress action hook (shared across all plugins).
+			// This must be called AFTER the page is actually registered.
+			/**
+			 * Fires when the shared License page is registered.
+			 *
+			 * This action is fired once per request after the License page is successfully registered.
+			 * It can be used by other code to detect when the License page registration has completed.
+			 *
+			 * @since 1.0.0
+			 */
+			do_action( 'flux_suite/menu_service/register_license_page' );
+		}, self::MENU_PRIORITY + 1 );
 	}
 
 	/**
@@ -367,18 +386,19 @@ class MenuService {
 				self::LOGS_PAGE_SLUG,
 				[ $this, 'render_logs_page' ]
 			);
-		}, self::MENU_PRIORITY + 1 );
 
-		// Mark as registered using WordPress action hook (shared across all plugins).
-		/**
-		 * Fires when the shared Logs page is registered.
-		 *
-		 * This action is fired once per request after the Logs page is successfully registered.
-		 * It can be used by other code to detect when the Logs page registration has completed.
-		 *
-		 * @since 1.0.0
-		 */
-		do_action( 'flux_suite/menu_service/register_logs_page' );
+			// Mark as registered using WordPress action hook (shared across all plugins).
+			// This must be called AFTER the page is actually registered.
+			/**
+			 * Fires when the shared Logs page is registered.
+			 *
+			 * This action is fired once per request after the Logs page is successfully registered.
+			 * It can be used by other code to detect when the Logs page registration has completed.
+			 *
+			 * @since 1.0.0
+			 */
+			do_action( 'flux_suite/menu_service/register_logs_page' );
+		}, self::MENU_PRIORITY + 1 );
 	}
 
 	/**
@@ -437,19 +457,20 @@ class MenuService {
 				self::SETTINGS_PAGE_SLUG,
 				[ $this, 'render_settings_page' ]
 			);
-		}, self::MENU_PRIORITY + 1 );
 
-		// Mark as registered using WordPress action hook (shared across all plugins).
-		/**
-		 * Fires when the shared Settings page is registered.
-		 *
-		 * This action is fired once per request after the Settings page is successfully registered
-		 * (the first time a plugin calls register_settings_page()). It can be used by other code
-		 * to detect when the Settings page registration has completed.
-		 *
-		 * @since 1.0.0
-		 */
-		do_action( 'flux_suite/menu_service/register_settings_page' );
+			// Mark as registered using WordPress action hook (shared across all plugins).
+			// This must be called AFTER the page is actually registered.
+			/**
+			 * Fires when the shared Settings page is registered.
+			 *
+			 * This action is fired once per request after the Settings page is successfully registered
+			 * (the first time a plugin calls register_settings_page()). It can be used by other code
+			 * to detect when the Settings page registration has completed.
+			 *
+			 * @since 1.0.0
+			 */
+			do_action( 'flux_suite/menu_service/register_settings_page' );
+		}, self::MENU_PRIORITY + 1 );
 	}
 
 	/**
