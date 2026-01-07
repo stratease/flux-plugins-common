@@ -8,6 +8,8 @@
 
 namespace FluxPlugins\Common\Services;
 
+use FluxPlugins\Common\Services\I18n;
+
 /**
  * Menu service.
  *
@@ -107,16 +109,6 @@ class MenuService {
 	private static $primary_submenu_candidates = [];
 
 	/**
-	 * Whether top-level menu hook has been registered.
-	 *
-	 * Prevents multiple hooks into admin_menu for the same menu registration.
-	 *
-	 * @since 1.0.0
-	 * @var bool
-	 */
-	private static $top_level_menu_hooked = false;
-
-	/**
 	 * Get singleton instance.
 	 *
 	 * @since 1.0.0
@@ -172,81 +164,46 @@ class MenuService {
 	 */
 	public function register_top_level_menu() {
 		// Ensure this menu hook is registered only once per request (shared across all plugins).
-		if ( self::$top_level_menu_hooked ) {
+		// Use WordPress action hook to track registration state across Strauss-namespaced instances.
+		if ( did_action( 'flux_suite/menu_service/register_top_level_menu' ) ) {
 			return;
 		}
 
-		// Mark as hooked to prevent duplicate hooks.
-		self::$top_level_menu_hooked = true;
+		// Mark as hooked to prevent duplicate hooks (shared across all plugins).
+		/**
+		 * Fires when the top-level menu hook is registered.
+		 *
+		 * This action is fired once per request when the admin_menu hook is registered.
+		 * It can be used to detect when the hook registration has occurred.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'flux_suite/menu_service/register_top_level_menu' );
 
 		// Hook into admin_menu to register the menu.
-		add_action( 'admin_menu', function() {
-			// Ensure this menu is registered only once (check action hook).
-			if ( did_action( 'flux_suite/menu_service/register_top_level_menu' ) ) {
-				return;
-			}
-			// Always register "Flux Suite" as top-level menu.
-			add_menu_page(
-				__( 'Flux Suite', 'flux-plugins-common' ),
-				__( 'Flux Suite', 'flux-plugins-common' ),
-				'manage_options',
-				self::TOP_LEVEL_MENU_SLUG,
-				[ $this, 'render_top_level_page' ],
-				'dashicons-admin-generic',
-				self::MENU_PRIORITY
-			);
-
-			// Mark as registered using WordPress action hook (shared across all plugins).
-			// This must be called AFTER the menu is actually registered.
-			/**
-			 * Fires when the top-level menu is registered.
-			 *
-			 * This action is fired once per request after the menu is successfully registered.
-			 * It can be used by other code to detect when the menu registration has completed.
-			 *
-			 * @since 1.0.0
-			 */
-			do_action( 'flux_suite/menu_service/register_top_level_menu' );
-		}, self::MENU_PRIORITY );
+		// Use method reference instead of closure to ensure $this is available.
+		add_action( 'admin_menu', [ $this, 'do_register_top_level_menu' ], self::MENU_PRIORITY );
 	}
 
 	/**
-	 * Get primary menu candidate.
+	 * Register top-level menu callback.
 	 *
-	 * Returns the submenu candidate with the lowest placement number, or null if none exists.
-	 * Collects candidates from all plugins by checking the action hook.
-	 * Used to determine which submenu should appear first under "Flux Suite".
+	 * Called by WordPress admin_menu hook. Registers the "Flux Suite" top-level menu.
 	 *
 	 * @since 1.0.0
-	 * @return array|null Primary menu candidate or null.
+	 * @return void
 	 */
-	private function get_primary_menu_candidate() {
-		// Collect candidates from all plugins via action hook.
-		$all_candidates = [];
-		
-		/**
-		 * Fires to collect primary menu candidates from all plugins.
-		 *
-		 * Plugins should add their candidates to the array passed by reference.
-		 *
-		 * @since 1.0.0
-		 * @param array $candidates Array of menu candidates (passed by reference).
-		 */
-		do_action_ref_array( 'flux_suite/menu_service/get_primary_menu_candidate', [ &$all_candidates ] );
-
-		// Also include candidates from this instance.
-		$all_candidates = array_merge( $all_candidates, self::$primary_submenu_candidates );
-
-		if ( empty( $all_candidates ) ) {
-			return null;
-		}
-
-		// Sort by placement (ascending) and return the first one.
-		usort( $all_candidates, function( $a, $b ) {
-			return $a['placement'] <=> $b['placement'];
-		} );
-
-		return $all_candidates[0];
+	public function do_register_top_level_menu() {
+		// Always register "Flux Suite" as top-level menu.
+		add_menu_page(
+			__( 'Flux Suite', I18n::domain() ),
+			__( 'Flux Suite', I18n::domain() ),
+			'manage_options',
+			self::TOP_LEVEL_MENU_SLUG,
+			[ $this, 'render_top_level_page' ],
+			'dashicons-admin-generic',
+			self::MENU_PRIORITY
+		);
 	}
 
 	/**
@@ -326,29 +283,39 @@ class MenuService {
 		// Ensure top-level menu is registered first.
 		$this->register_top_level_menu();
 
-		// Hook into admin_menu to register the license page.
-		add_action( 'admin_menu', function() {
-			add_submenu_page(
-				self::TOP_LEVEL_MENU_SLUG,
-				__( 'License', 'flux-plugins-common' ),
-				__( 'License', 'flux-plugins-common' ),
-				'manage_options',
-				self::LICENSE_PAGE_SLUG,
-				[ $this, 'render_license_page' ]
-			);
+		// Mark as hooked to prevent duplicate hooks (shared across all plugins).
+		/**
+		 * Fires when the License page hook is registered.
+		 *
+		 * This action is fired once per request when the admin_menu hook is registered.
+		 * It can be used to detect when the hook registration has occurred.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'flux_suite/menu_service/register_license_page' );
 
-			// Mark as registered using WordPress action hook (shared across all plugins).
-			// This must be called AFTER the page is actually registered.
-			/**
-			 * Fires when the shared License page is registered.
-			 *
-			 * This action is fired once per request after the License page is successfully registered.
-			 * It can be used by other code to detect when the License page registration has completed.
-			 *
-			 * @since 1.0.0
-			 */
-			do_action( 'flux_suite/menu_service/register_license_page' );
-		}, self::MENU_PRIORITY + 1 );
+		// Hook into admin_menu to register the license page.
+		// Use method reference instead of closure to ensure $this is available.
+		add_action( 'admin_menu', [ $this, 'do_register_license_page' ], self::MENU_PRIORITY + 1 );
+	}
+
+	/**
+	 * Register license page callback.
+	 *
+	 * Called by WordPress admin_menu hook. Registers the "License" submenu page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function do_register_license_page() {
+		add_submenu_page(
+			self::TOP_LEVEL_MENU_SLUG,
+			__( 'License', I18n::domain() ),
+			__( 'License', I18n::domain() ),
+			'manage_options',
+			self::LICENSE_PAGE_SLUG,
+			[ $this, 'render_license_page' ]
+		);
 	}
 
 	/**
@@ -376,29 +343,39 @@ class MenuService {
 		// Ensure top-level menu is registered first.
 		$this->register_top_level_menu();
 
-		// Hook into admin_menu to register the logs page.
-		add_action( 'admin_menu', function() {
-			add_submenu_page(
-				self::TOP_LEVEL_MENU_SLUG,
-				__( 'Logs', 'flux-plugins-common' ),
-				__( 'Logs', 'flux-plugins-common' ),
-				'manage_options',
-				self::LOGS_PAGE_SLUG,
-				[ $this, 'render_logs_page' ]
-			);
+		// Mark as hooked to prevent duplicate hooks (shared across all plugins).
+		/**
+		 * Fires when the Logs page hook is registered.
+		 *
+		 * This action is fired once per request when the admin_menu hook is registered.
+		 * It can be used to detect when the hook registration has occurred.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'flux_suite/menu_service/register_logs_page' );
 
-			// Mark as registered using WordPress action hook (shared across all plugins).
-			// This must be called AFTER the page is actually registered.
-			/**
-			 * Fires when the shared Logs page is registered.
-			 *
-			 * This action is fired once per request after the Logs page is successfully registered.
-			 * It can be used by other code to detect when the Logs page registration has completed.
-			 *
-			 * @since 1.0.0
-			 */
-			do_action( 'flux_suite/menu_service/register_logs_page' );
-		}, self::MENU_PRIORITY + 1 );
+		// Hook into admin_menu to register the logs page.
+		// Use method reference instead of closure to ensure $this is available.
+		add_action( 'admin_menu', [ $this, 'do_register_logs_page' ], self::MENU_PRIORITY + 1 );
+	}
+
+	/**
+	 * Register logs page callback.
+	 *
+	 * Called by WordPress admin_menu hook. Registers the "Logs" submenu page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function do_register_logs_page() {
+		add_submenu_page(
+			self::TOP_LEVEL_MENU_SLUG,
+			__( 'Logs', I18n::domain() ),
+			__( 'Logs', I18n::domain() ),
+			'manage_options',
+			self::LOGS_PAGE_SLUG,
+			[ $this, 'render_logs_page' ]
+		);
 	}
 
 	/**
@@ -447,30 +424,39 @@ class MenuService {
 			'label'     => $tab_label,
 		];
 
-		// Register settings page (hook into admin_menu).
-		add_action( 'admin_menu', function() {
-			add_submenu_page(
-				self::TOP_LEVEL_MENU_SLUG,
-				__( 'Settings', 'flux-plugins-common' ),
-				__( 'Settings', 'flux-plugins-common' ),
-				'manage_options',
-				self::SETTINGS_PAGE_SLUG,
-				[ $this, 'render_settings_page' ]
-			);
+		// Mark as hooked to prevent duplicate hooks (shared across all plugins).
+		/**
+		 * Fires when the Settings page hook is registered.
+		 *
+		 * This action is fired once per request when the admin_menu hook is registered.
+		 * It can be used to detect when the hook registration has occurred.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'flux_suite/menu_service/register_settings_page' );
 
-			// Mark as registered using WordPress action hook (shared across all plugins).
-			// This must be called AFTER the page is actually registered.
-			/**
-			 * Fires when the shared Settings page is registered.
-			 *
-			 * This action is fired once per request after the Settings page is successfully registered
-			 * (the first time a plugin calls register_settings_page()). It can be used by other code
-			 * to detect when the Settings page registration has completed.
-			 *
-			 * @since 1.0.0
-			 */
-			do_action( 'flux_suite/menu_service/register_settings_page' );
-		}, self::MENU_PRIORITY + 1 );
+		// Register settings page (hook into admin_menu).
+		// Use method reference instead of closure to ensure $this is available.
+		add_action( 'admin_menu', [ $this, 'do_register_settings_page' ], self::MENU_PRIORITY + 1 );
+	}
+
+	/**
+	 * Register settings page callback.
+	 *
+	 * Called by WordPress admin_menu hook. Registers the "Settings" submenu page.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function do_register_settings_page() {
+		add_submenu_page(
+			self::TOP_LEVEL_MENU_SLUG,
+			__( 'Settings', I18n::domain() ),
+			__( 'Settings', I18n::domain() ),
+			'manage_options',
+			self::SETTINGS_PAGE_SLUG,
+			[ $this, 'render_settings_page' ]
+		);
 	}
 
 	/**
@@ -507,7 +493,7 @@ class MenuService {
 	public function render_license_page() {
 		// TODO: Render React LicensePage component.
 		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . esc_html__( 'License', 'flux-plugins-common' ) . '</h1></div>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'License', I18n::domain() ) . '</h1></div>';
 	}
 
 	/**
@@ -519,7 +505,7 @@ class MenuService {
 	public function render_logs_page() {
 		// TODO: Render React LogsPage component.
 		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . esc_html__( 'Logs', 'flux-plugins-common' ) . '</h1></div>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'Logs', I18n::domain() ) . '</h1></div>';
 	}
 
 	/**
@@ -531,7 +517,7 @@ class MenuService {
 	public function render_settings_page() {
 		// TODO: Render React SettingsPage component with tabs.
 		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . esc_html__( 'Settings', 'flux-plugins-common' ) . '</h1></div>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'Settings', I18n::domain() ) . '</h1></div>';
 	}
 }
 
