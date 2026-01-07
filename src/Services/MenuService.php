@@ -131,7 +131,7 @@ class MenuService {
 	/**
 	 * Initialize menu service.
 	 *
-	 * Hooks into WordPress admin_menu action.
+	 * Ensures the top-level "Flux Suite" menu is registered.
 	 * Note: This should only be called from admin_init hook, as admin functions
 	 * are not available in WP-CLI or frontend contexts.
 	 *
@@ -139,8 +139,9 @@ class MenuService {
 	 * @return void
 	 */
 	public function init() {
-		// This method is intentionally minimal.
-		// Individual registration methods hook themselves into admin_menu and handle their own idempotency.
+		// Ensure top-level menu is registered.
+		// This ensures the menu exists even if no submenu pages are registered yet.
+		$this->register_top_level_menu();
 	}
 
 	/**
