@@ -100,11 +100,11 @@ class CompatibilityNoticeHandler {
 		// Register admin notice hook.
 		add_action( 'admin_notices', [ $this, 'display_notice' ] );
 
-		// Register AJAX handler for dismissing notices.
+		// Register AJAX handler for dismissing notices (plugin-specific action).
 		add_action( 'wp_ajax_' . $this->ajax_action, [ $this, 'handle_dismiss_notice' ] );
 
-		// Enqueue dismiss script.
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_dismiss_script' ] );
+		// Note: Script enqueuing is handled by CompatibilityService to ensure
+		// assets are only enqueued once across all plugins.
 	}
 
 	/**
@@ -154,9 +154,11 @@ class CompatibilityNoticeHandler {
 			}
 
 			// Add dismiss button for notices.
+			// Nonce name is plugin-specific via ajax_action to avoid collisions.
+			$nonce_name = 'flux_plugins_dismiss_compatibility_' . $notice_hash;
 			$dismiss_url = wp_nonce_url(
 				admin_url( 'admin-ajax.php?action=' . urlencode( $this->ajax_action ) . '&hash=' . urlencode( $notice_hash ) ),
-				'flux_plugins_dismiss_compatibility_' . $notice_hash
+				$nonce_name
 			);
 			$dismiss_html = sprintf(
 				'<button type="button" class="notice-dismiss flux-plugins-dismiss" data-dismiss-url="%s" data-hash="%s"><span class="screen-reader-text">%s</span></button>',
@@ -197,57 +199,6 @@ class CompatibilityNoticeHandler {
 		}
 	}
 
-	/**
-	 * Enqueue dismiss script following WordPress guidelines.
-	 *
-	 * Uses wp_enqueue_script() to properly enqueue the compiled JavaScript file
-	 * with jQuery dependency per WordPress Plugin Guidelines #13.
-	 *
-	 * @since 1.0.0
-	 * @param string $hook Current admin page hook.
-	 * @return void
-	 */
-	public function enqueue_dismiss_script( $hook = '' ) {
-		// Only enqueue script if there are compatibility notices on the page.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		$notices = $this->validator->get_notices();
-		if ( empty( $notices ) ) {
-			return;
-		}
-
-		// Check if any notices are actually displayed (not dismissed).
-		$has_visible_notices = false;
-		foreach ( $notices as $notice ) {
-			$error_code  = isset( $notice['error_code'] ) ? $notice['error_code'] : $notice['code'];
-			$notice_hash = $this->generate_notice_hash( $error_code, $notice['message'] );
-			if ( ! $this->is_notice_dismissed( $notice_hash ) ) {
-				$has_visible_notices = true;
-				break;
-			}
-		}
-
-		if ( ! $has_visible_notices ) {
-			return;
-		}
-
-		// Determine script path based on SCRIPT_DEBUG (development vs production).
-		$script_debug = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG;
-		$script_path  = $script_debug
-			? 'assets/js/src/admin/compatibility-dismiss.js' // Source file for development.
-			: 'assets/js/dist/compatibility-dismiss.bundle.js'; // Built file for production.
-
-		// Enqueue script with jQuery as dependency (WordPress Plugin Guidelines #13).
-		wp_enqueue_script(
-			'flux-plugins-compatibility-dismiss',
-			trailingslashit( $this->plugin_url ) . $script_path,
-			[ 'jquery' ], // jQuery dependency - WordPress default library.
-			$this->plugin_version,
-			true // Load in footer.
-		);
-	}
 
 	/**
 	 * Handle AJAX request to dismiss notice.
@@ -262,6 +213,7 @@ class CompatibilityNoticeHandler {
 			wp_send_json_error( [ 'message' => __( 'Invalid notice hash', $this->text_domain ) ] );
 		}
 
+		// Nonce name is plugin-specific via ajax_action to avoid collisions.
 		check_ajax_referer( 'flux_plugins_dismiss_compatibility_' . $hash, '_wpnonce' );
 
 		// Verify user capability.

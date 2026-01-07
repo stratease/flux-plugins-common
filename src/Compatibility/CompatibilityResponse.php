@@ -50,10 +50,7 @@ class CompatibilityResponse {
 	public function __construct( array $data ) {
 		$this->success = isset( $data['success'] ) ? (bool) $data['success'] : false;
 		// If cache is disabled via constant, set TTL to 0, otherwise use API-provided TTL.
-		// Check both common and plugin-specific constants for backward compatibility.
-		$cache_disabled = ( defined( 'FLUX_PLUGINS_COMMON_DISABLE_CACHE' ) && FLUX_PLUGINS_COMMON_DISABLE_CACHE )
-			|| ( defined( 'FLUX_MEDIA_OPTIMIZER_DISABLE_CACHE' ) && FLUX_MEDIA_OPTIMIZER_DISABLE_CACHE );
-		if ( $cache_disabled ) {
+		if ( defined( 'FLUX_PLUGINS_COMMON_DISABLE_CACHE' ) && FLUX_PLUGINS_COMMON_DISABLE_CACHE ) {
 			$this->cache_ttl_seconds = 0;
 		} else {
 			$this->cache_ttl_seconds = isset( $data['cache_ttl_seconds'] ) ? absint( $data['cache_ttl_seconds'] ) : 0;

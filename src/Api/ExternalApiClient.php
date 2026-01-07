@@ -13,6 +13,7 @@ namespace FluxPlugins\Common\Api;
 
 use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Compatibility\CompatibilityResponse;
+use FluxPlugins\Common\Services\CompatibilityService;
 
 /**
  * External API client.
@@ -53,14 +54,34 @@ class ExternalApiClient {
 	 * Constructor.
 	 *
 	 * @since 1.0.0
-	 * @param \Psr\Log\LoggerInterface $logger Logger instance.
-	 * @param string                   $base_url External service base URL.
-	 * @param int                      $timeout Request timeout in seconds (default: 15).
+	 * @param \Psr\Log\LoggerInterface $logger   Logger instance.
+	 * @param string|null              $base_url Optional external service base URL. If not provided,
+	 *                                           will check FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL constant,
+	 *                                           or fallback to default 'https://api.fluxplugins.com'.
+	 * @param int|null                 $timeout  Optional request timeout in seconds. If not provided,
+	 *                                           will check FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT constant,
+	 *                                           or fallback to default 15.
 	 */
-	public function __construct( $logger, $base_url, $timeout = 15 ) {
-		$this->logger   = $logger;
-		$this->base_url = $base_url;
-		$this->timeout  = $timeout;
+	public function __construct( $logger, $base_url = null, $timeout = null ) {
+		$this->logger = $logger;
+
+		// Initialize base URL: use provided value, or check constant, or use default.
+		if ( $base_url !== null ) {
+			$this->base_url = $base_url;
+		} elseif ( defined( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL' ) ) {
+			$this->base_url = \FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL;
+		} else {
+			$this->base_url = 'https://api.fluxplugins.com';
+		}
+
+		// Initialize timeout: use provided value, or check constant, or use default.
+		if ( $timeout !== null ) {
+			$this->timeout = $timeout;
+		} elseif ( defined( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT' ) ) {
+			$this->timeout = (int) \FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT;
+		} else {
+			$this->timeout = 15;
+		}
 	}
 
 	/**
@@ -70,12 +91,27 @@ class ExternalApiClient {
 	 * Should be called when license_key changes or is initially set.
 	 * All subsequent requests use only account_id.
 	 *
+	 * Automatically checks compatibility before making the request. If compatibility check fails,
+	 * the request is blocked and an error response is returned.
+	 *
 	 * @since 1.0.0
 	 * @param string $license_key License key to activate.
 	 * @param string $plugin_version Optional plugin version (if not provided, will not be included).
 	 * @return array Response array with 'success', 'valid', 'error', and 'message'.
 	 */
 	public function activate_license( $license_key, $plugin_version = '' ) {
+		// Check compatibility before making API request.
+		if ( ! $this->check_compatibility_before_request() ) {
+			if ( $this->logger !== null ) {
+				$this->logger->warning( 'License activation blocked: Compatibility check indicates operations are disabled' );
+			}
+			return [
+				'success' => false,
+				'error'   => 'compatibility_check_failed',
+				'message' => 'Compatibility check failed. Please update the plugin or check compatibility status.',
+			];
+		}
+
 		$account_id = AccountIdService::get_instance()->get_account_id();
 
 		if ( empty( $account_id ) ) {
@@ -129,11 +165,27 @@ class ExternalApiClient {
 	 * Checks if the current license key is still valid.
 	 * Should be called periodically to verify license status.
 	 *
+	 * Automatically checks compatibility before making the request. If compatibility check fails,
+	 * the request is blocked and an error response is returned.
+	 *
 	 * @since 1.0.0
 	 * @param string $license_key License key to validate.
 	 * @return array Response array with 'success', 'valid', 'error', and 'message'.
 	 */
 	public function validate_license( $license_key ) {
+		// Check compatibility before making API request.
+		if ( ! $this->check_compatibility_before_request() ) {
+			if ( $this->logger !== null ) {
+				$this->logger->warning( 'License validation blocked: Compatibility check indicates operations are disabled' );
+			}
+			return [
+				'success'     => false,
+				'error'       => 'compatibility_check_failed',
+				'message'     => 'Compatibility check failed. Please update the plugin or check compatibility status.',
+				'status_code' => null,
+			];
+		}
+
 		$account_id = AccountIdService::get_instance()->get_account_id();
 
 		if ( empty( $account_id ) ) {
@@ -553,6 +605,40 @@ class ExternalApiClient {
 			'success' => true,
 			'data'    => $data,
 		];
+	}
+
+	/**
+	 * Check compatibility before making external API request.
+	 *
+	 * Ensures we have fresh compatibility data before operations. Uses cache if valid,
+	 * otherwise fetches from API and caches the result. Then checks if operations should be blocked.
+	 *
+	 * This method is called automatically by activate_license() and validate_license() methods.
+	 * Plugin-specific endpoints should call this manually if they need compatibility checking.
+	 *
+	 * @since 1.0.0
+	 * @return bool True if compatible and can proceed, false if blocked.
+	 */
+	private function check_compatibility_before_request() {
+		// Get compatibility validator instance from CompatibilityService.
+		// No plugin slug needed - uses the current plugin from FluxPlugins::init().
+		$validator = CompatibilityService::get_validator();
+
+		if ( $validator === null ) {
+			// Validator not initialized yet, allow operations (fail open).
+			return true;
+		}
+
+		// Ensure we have fresh compatibility data (uses cache if valid, fetches if needed).
+		// This ensures we have up-to-date compatibility info before operations.
+		$validator->check_compatibility();
+
+		// Check if operations should be blocked using the cached/fresh data.
+		if ( $validator->should_block_operations() ) {
+			return false;
+		}
+
+		return true;
 	}
 }
 

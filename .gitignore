@@ -1,17 +1,14 @@
-# Composer
-/vendor/
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+assets/js/dist/
+*.bundle.js
+*.bundle.js.map
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-node_modules/
-

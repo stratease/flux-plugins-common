@@ -10,6 +10,7 @@ namespace FluxPlugins\Common;
 
 use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Services\MenuService;
+use FluxPlugins\Common\Services\CompatibilityService;
 
 /**
  * Main Flux Plugins initialization service.
@@ -45,6 +46,7 @@ class FluxPlugins {
 	 */
 	private $plugin_version;
 
+
 	/**
 	 * Get singleton instance.
 	 *
@@ -79,6 +81,9 @@ class FluxPlugins {
 	 * @return void
 	 */
 	public static function init( $plugin_slug, $plugin_version ) {
+		// Load constants first.
+		require_once dirname( __DIR__ ) . '/includes/constants.php';
+
 		$instance = self::get_instance();
 		$instance->plugin_slug    = $plugin_slug;
 		$instance->plugin_version = $plugin_version;
@@ -95,6 +100,7 @@ class FluxPlugins {
 	 *
 	 * This method is called on the 'init' hook and performs general initialization:
 	 * - Ensures account ID exists (via AccountIdService)
+	 * - Initializes compatibility validation system
 	 *
 	 * This method is idempotent and can be called multiple times safely.
 	 * Note: Since each plugin may have its own namespaced version of this library,
@@ -108,6 +114,10 @@ class FluxPlugins {
 		// Ensure account ID exists (available in all contexts: admin, frontend, WP-CLI).
 		$account_service = AccountIdService::get_instance();
 		$account_service->ensure_account_id();
+
+		// Initialize compatibility validation system via CompatibilityService.
+		$compatibility_service = CompatibilityService::get_instance();
+		$compatibility_service->init_plugin( $this->plugin_slug, $this->plugin_version );
 
 		// TODO: Initialize Logger with plugin slug when Logger service is available.
 		// Logger::get_instance()->init( $this->plugin_slug );
@@ -136,5 +146,6 @@ class FluxPlugins {
 		$menu_service = MenuService::get_instance();
 		$menu_service->init();
 	}
+
 }
 
