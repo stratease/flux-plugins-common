@@ -10,6 +10,8 @@
 
 namespace FluxPlugins\Common\Compatibility;
 
+use FluxPlugins\Common\Services\I18n;
+
 /**
  * Compatibility notice handler class.
  *
@@ -34,28 +36,12 @@ class CompatibilityNoticeHandler {
 	private $dismissal_transient_prefix;
 
 	/**
-	 * Plugin text domain for translations.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	private $text_domain;
-
-	/**
 	 * Plugin version for cache busting.
 	 *
 	 * @since 1.0.0
 	 * @var string
 	 */
 	private $plugin_version;
-
-	/**
-	 * Plugin URL for script enqueuing.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	private $plugin_url;
 
 	/**
 	 * AJAX action name for dismissing notices.
@@ -70,17 +56,13 @@ class CompatibilityNoticeHandler {
 	 *
 	 * @since 1.0.0
 	 * @param CompatibilityValidator $validator Compatibility validator instance.
-	 * @param string                 $text_domain Plugin text domain for translations.
 	 * @param string                 $plugin_version Plugin version for cache busting.
-	 * @param string                 $plugin_url Plugin URL for script enqueuing.
 	 * @param string                 $dismissal_transient_prefix Optional dismissal transient prefix (default: 'flux_plugins_compatibility_dismissed_').
 	 * @param string                 $ajax_action Optional AJAX action name (default: 'flux_plugins_dismiss_compatibility_notice').
 	 */
-	public function __construct( CompatibilityValidator $validator, $text_domain, $plugin_version, $plugin_url, $dismissal_transient_prefix = 'flux_plugins_compatibility_dismissed_', $ajax_action = 'flux_plugins_dismiss_compatibility_notice' ) {
+	public function __construct( CompatibilityValidator $validator, $plugin_version, $dismissal_transient_prefix = 'flux_plugins_compatibility_dismissed_', $ajax_action = 'flux_plugins_dismiss_compatibility_notice' ) {
 		$this->validator                  = $validator;
-		$this->text_domain                = $text_domain;
 		$this->plugin_version             = $plugin_version;
-		$this->plugin_url                 = $plugin_url;
 		$this->dismissal_transient_prefix = $dismissal_transient_prefix;
 		$this->ajax_action                = $ajax_action;
 	}
@@ -164,7 +146,7 @@ class CompatibilityNoticeHandler {
 				'<button type="button" class="notice-dismiss flux-plugins-dismiss" data-dismiss-url="%s" data-hash="%s"><span class="screen-reader-text">%s</span></button>',
 				esc_url( $dismiss_url ),
 				esc_attr( $notice_hash ),
-				esc_html__( 'Dismiss this notice', $this->text_domain )
+				esc_html__( 'Dismiss this notice', I18n::domain() )
 			);
 
 			// Output notice.
@@ -210,7 +192,7 @@ class CompatibilityNoticeHandler {
 		// Verify nonce and get hash.
 		$hash = isset( $_GET['hash'] ) ? sanitize_text_field( $_GET['hash'] ) : '';
 		if ( empty( $hash ) ) {
-			wp_send_json_error( [ 'message' => __( 'Invalid notice hash', $this->text_domain ) ] );
+			wp_send_json_error( [ 'message' => __( 'Invalid notice hash', I18n::domain() ) ] );
 		}
 
 		// Nonce name is plugin-specific via ajax_action to avoid collisions.
@@ -218,13 +200,13 @@ class CompatibilityNoticeHandler {
 
 		// Verify user capability.
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( [ 'message' => __( 'Insufficient permissions', $this->text_domain ) ] );
+			wp_send_json_error( [ 'message' => __( 'Insufficient permissions', I18n::domain() ) ] );
 		}
 
 		// Dismiss notice.
 		$this->dismiss_notice( $hash );
 
-		wp_send_json_success( [ 'message' => __( 'Notice dismissed', $this->text_domain ) ] );
+		wp_send_json_success( [ 'message' => __( 'Notice dismissed', I18n::domain() ) ] );
 	}
 
 	/**

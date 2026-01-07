@@ -84,14 +84,15 @@ class CompatibilityValidator {
 	 * @param ExternalApiClient         $api_client      External API client instance.
 	 * @param string                   $plugin_identifier Plugin identifier (e.g., 'flux-media-optimizer').
 	 * @param string                   $plugin_version   Plugin version.
-	 * @param string                   $cache_option_name Optional cache transient name (default: 'flux_plugins_compatibility_cache').
 	 */
-	public function __construct( $logger, $api_client, $plugin_identifier, $plugin_version, $cache_option_name = 'flux_plugins_compatibility_cache' ) {
+	public function __construct( $logger, $api_client, $plugin_identifier, $plugin_version ) {
 		$this->logger            = $logger;
 		$this->api_client        = $api_client;
 		$this->plugin_identifier = $plugin_identifier;
 		$this->plugin_version    = $plugin_version;
-		$this->cache_option_name = $cache_option_name;
+		
+		// Generate cache transient name based on plugin identifier.
+		$this->cache_option_name = 'flux_plugins_compatibility_cache_' . sanitize_key( $plugin_identifier );
 	}
 
 	/**

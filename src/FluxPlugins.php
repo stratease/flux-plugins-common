@@ -11,6 +11,7 @@ namespace FluxPlugins\Common;
 use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Services\MenuService;
 use FluxPlugins\Common\Services\CompatibilityService;
+use FluxPlugins\Common\Services\I18n;
 
 /**
  * Main Flux Plugins initialization service.
@@ -78,15 +79,19 @@ class FluxPlugins {
 	 * @since 1.0.0
 	 * @param string $plugin_slug    Plugin slug (e.g., 'flux-media-optimizer').
 	 * @param string $plugin_version Plugin version (e.g., '1.0.0').
+	 * @param string $text_domain     Text domain for translations (e.g., 'flux-media-optimizer').
 	 * @return void
 	 */
-	public static function init( $plugin_slug, $plugin_version ) {
+	public static function init( $plugin_slug, $plugin_version, $text_domain ) {
 		// Load constants first.
 		require_once __DIR__ . '/includes/constants.php';
 
 		$instance = self::get_instance();
 		$instance->plugin_slug    = $plugin_slug;
 		$instance->plugin_version = $plugin_version;
+
+		// Set text domain for internationalization service.
+		I18n::set_domain( $text_domain );
 
 		// Hook into WordPress 'init' action for general initialization (account ID, etc.).
 		add_action( 'init', [ $instance, 'do_init' ], 10 );
