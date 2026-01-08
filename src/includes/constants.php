@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Constants for Flux Plugins Common library.
  *
@@ -21,44 +22,40 @@
  *
  * All constants can be overridden in `wp-config.php` by defining them before the library loads.
  *
- * @package FluxPlugins\Common
+ * @package \FluxPlugins\Common
  * @since 1.0.0
  */
-
 // Constants must be defined in global namespace.
-if ( ! defined( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL' ) ) {
-	/**
-	 * External service base URL.
-	 *
-	 * Can be overridden in wp-config.php or by plugins.
-	 *
-	 * @since 1.0.0
-	 */
-	define( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL', 'https://api.fluxplugins.com' );
+if (!defined('FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL')) {
+    /**
+     * External service base URL.
+     *
+     * Can be overridden in wp-config.php or by plugins.
+     *
+     * @since 1.0.0
+     */
+    define('FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL', 'https://api.fluxplugins.com');
 }
-
-if ( ! defined( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT' ) ) {
-	/**
-	 * External service request timeout in seconds.
-	 *
-	 * Can be overridden in wp-config.php or by plugins.
-	 *
-	 * @since 1.0.0
-	 */
-	define( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT', 15 );
+if (!defined('FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT')) {
+    /**
+     * External service request timeout in seconds.
+     *
+     * Can be overridden in wp-config.php or by plugins.
+     *
+     * @since 1.0.0
+     */
+    define('FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT', 15);
 }
-
-if ( ! defined( 'FLUX_PLUGINS_COMMON_DISABLE_CACHE' ) ) {
-	/**
-	 * Disable caching for compatibility checks.
-	 *
-	 * When set to true, compatibility check results will not be cached,
-	 * forcing fresh API requests on every check. Useful for development and debugging.
-	 *
-	 * Can be overridden in wp-config.php or by plugins.
-	 *
-	 * @since 1.0.0
-	 */
-	define( 'FLUX_PLUGINS_COMMON_DISABLE_CACHE', false );
+if (!defined('FLUX_PLUGINS_COMMON_DISABLE_CACHE')) {
+    /**
+     * Disable caching for compatibility checks.
+     *
+     * When set to true, compatibility check results will not be cached,
+     * forcing fresh API requests on every check. Useful for development and debugging.
+     *
+     * Can be overridden in wp-config.php or by plugins.
+     *
+     * @since 1.0.0
+     */
+    define('FLUX_PLUGINS_COMMON_DISABLE_CACHE', false);
 }
-

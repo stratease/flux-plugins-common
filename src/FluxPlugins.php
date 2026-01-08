@@ -13,6 +13,7 @@ use FluxPlugins\Common\Services\MenuService;
 use FluxPlugins\Common\Services\CompatibilityService;
 use FluxPlugins\Common\Services\I18n;
 
+
 /**
  * Main Flux Plugins initialization service.
  *
@@ -22,6 +23,7 @@ use FluxPlugins\Common\Services\I18n;
  * @since 1.0.0
  */
 class FluxPlugins {
+
 
 	/**
 	 * Singleton instance.
@@ -98,6 +100,10 @@ class FluxPlugins {
 
 		// Hook into WordPress 'admin_init' action for admin-specific initialization (menus, etc.).
 		add_action( 'admin_init', [ $instance, 'do_admin_init' ], 10 );
+
+		// Initialize menu service.
+		$menu_service = MenuService::get_instance();
+		$menu_service->init();
 	}
 
 	/**
@@ -124,6 +130,7 @@ class FluxPlugins {
 		$compatibility_service = CompatibilityService::get_instance();
 		$compatibility_service->init_plugin( $this->plugin_slug, $this->plugin_version );
 
+		
 		// TODO: Initialize Logger with plugin slug when Logger service is available.
 		// Logger::get_instance()->init( $this->plugin_slug );
 	}
@@ -139,17 +146,13 @@ class FluxPlugins {
 	 * This method only runs in admin context, not in WP-CLI or frontend.
 	 * This method is idempotent and can be called multiple times safely.
 	 * Note: Since each plugin may have its own namespaced version of this library,
-	 * the singleton pattern doesn't work across plugins. However, the underlying
-	 * services (MenuService) use WordPress action hooks to track shared state,
-	 * ensuring pages only appear once even when multiple plugins call this method.
+	 * the singleton pattern doesn't work across plugins. However, the underlying	 * ensuring pages only appear once even when multiple plugins call this method.
 	 *
 	 * @since 1.0.0
 	 * @return void
 	 */
 	public function do_admin_init() {
-		// Initialize menu service.
-		$menu_service = MenuService::get_instance();
-		$menu_service->init();
+		// TODO any admin only code here.		
 	}
 
 }
