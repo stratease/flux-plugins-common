@@ -45,6 +45,8 @@ function createBaseWebpackConfig(options = {}) {
         // Alias for shared components from flux-plugins-common
         // Assets are now in src/assets/ so Strauss will copy them
         '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
+        // Alias for images directory
+        '@flux-plugins-common/images': path.resolve(commonBaseDir, 'src/assets/images'),
         // Plugin-specific alias (can be overridden by extendsConfig)
         [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
       },
@@ -78,6 +80,7 @@ function createBaseWebpackConfig(options = {}) {
                     root: ['./src/assets/js/src'],
                     alias: {
                       '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
+                      '@flux-plugins-common/images': path.resolve(commonBaseDir, 'src/assets/images'),
                       [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
                     },
                   },
@@ -110,6 +113,7 @@ function createBaseWebpackConfig(options = {}) {
                     root: ['./src/assets/js/src'],
                     alias: {
                       '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
+                      '@flux-plugins-common/images': path.resolve(commonBaseDir, 'src/assets/images'),
                       [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
                     },
                   },
@@ -121,6 +125,14 @@ function createBaseWebpackConfig(options = {}) {
         {
           test: /\.css$/i,
           use: ['style-loader', 'css-loader'],
+        },
+        {
+          // Handle image files
+          test: /\.(png|jpe?g|gif|svg|webp)$/i,
+          type: 'asset/resource',
+          generator: {
+            filename: 'images/[name][ext]',
+          },
         },
       ],
     },

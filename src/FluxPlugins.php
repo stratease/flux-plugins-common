@@ -12,7 +12,7 @@ use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Services\MenuService;
 use FluxPlugins\Common\Services\CompatibilityService;
 use FluxPlugins\Common\Services\I18n;
-use FluxPlugins\Common\Http\Controllers\LicenseController;
+use FluxPlugins\Common\Services\RestApiService;
 
 
 /**
@@ -102,6 +102,10 @@ class FluxPlugins {
 		// Hook into WordPress 'admin_init' action for admin-specific initialization (menus, etc.).
 		add_action( 'admin_init', [ $instance, 'do_admin_init' ], 10 );
 
+		// Initialize REST API service.
+		$rest_api_service = RestApiService::get_instance();
+		$rest_api_service->init();
+
 		// Initialize menu service.
 		$menu_service = MenuService::get_instance();
 		$menu_service->init();
@@ -130,32 +134,6 @@ class FluxPlugins {
 		// Initialize compatibility validation system via CompatibilityService.
 		$compatibility_service = CompatibilityService::get_instance();
 		$compatibility_service->init_plugin( $this->plugin_slug, $this->plugin_version );
-
-		// Register REST API routes (only register once, shared across all plugins).
-		// Hook into rest_api_init to register routes properly.
-		if ( ! did_action( 'flux_suite/flux_plugins/hook_rest_routes' ) ) {
-			// Mark as hooked to prevent duplicate hooks (shared across all plugins).
-			/**
-			 * Fires when REST API routes hook is registered.
-			 *
-			 * @since 1.0.0
-			 */
-			do_action( 'flux_suite/flux_plugins/hook_rest_routes' );
-
-			add_action( 'rest_api_init', function() {
-				// Get logger instance if available (from first plugin that initializes)
-				// For now, we'll pass null and let LicenseController handle it
-				$license_controller = new LicenseController( null );
-				$license_controller->register_routes();
-
-				/**
-				 * Fires when REST API routes are actually registered.
-				 *
-				 * @since 1.0.0
-				 */
-				do_action( 'flux_suite/flux_plugins/register_rest_routes' );
-			}, 10 );
-		}
 		
 		// TODO: Initialize Logger with plugin slug when Logger service is available.
 		// Logger::get_instance()->init( $this->plugin_slug );

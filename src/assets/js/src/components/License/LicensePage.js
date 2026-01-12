@@ -12,15 +12,20 @@ import {
   Tooltip,
   IconButton,
   Link,
-  Paper,
-  Container,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import { CheckCircle, Error as ErrorIcon, Refresh } from '@mui/icons-material';
+import { CheckCircle, Error as ErrorIcon, Refresh, AutoAwesome, Settings, Cloud, Star } from '@mui/icons-material';
 import { __ } from '@wordpress/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { useLicense, useActivateLicense, useValidateLicense } from '@flux-plugins-common/hooks/useLicense';
+import { PageLayout } from '@flux-plugins-common/components/PageLayout';
 
 // Create a client for this page
 const queryClient = new QueryClient({
@@ -180,22 +185,100 @@ const LicensePageContent = () => {
   const licenseKey = localLicenseKey;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Paper elevation={1} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {__('License', 'flux-plugins-common')}
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          {__('Enter your Flux Plugins license key to enable premium features across all Flux Plugins.', 'flux-plugins-common')}{' '}
-          <Link
-            href="https://fluxplugins.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ textDecoration: 'none' }}
-          >
-            {__('Purchase a license.', 'flux-plugins-common')}
-          </Link>
-        </Typography>
+    <PageLayout title={__('License', 'flux-plugins-common')}>
+      {licenseKey && licenseData?.license_is_valid ? (
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            {__('Your license provides access to download and use all plugins in the Flux Suite.', 'flux-plugins-common')}{' '}
+            <Link
+              href="https://fluxplugins.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ textDecoration: 'none', fontWeight: 500 }}
+            >
+              {__('Browse plugins', 'flux-plugins-common')}
+            </Link>
+          </Typography>
+        ) : (
+          <>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {__('Enter your Flux Plugins license key to unlock premium features across all Flux Plugins.', 'flux-plugins-common')}
+            </Typography>
+            
+            <Card 
+              elevation={0} 
+              sx={{ 
+                mb: 4, 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
+                  {__('Unlock Premium Features', 'flux-plugins-common')}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 2, opacity: 0.95 }}>
+                  {__('A Flux Plugins license gives you access to:', 'flux-plugins-common')}
+                </Typography>
+                <List dense sx={{ mb: 2 }}>
+                  <ListItem disableGutters sx={{ py: 0.5 }}>
+                    <ListItemIcon sx={{ minWidth: 36, color: 'white' }}>
+                      <AutoAwesome fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={__('AI-Powered Features', 'flux-plugins-common')}
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItem>
+                  <ListItem disableGutters sx={{ py: 0.5 }}>
+                    <ListItemIcon sx={{ minWidth: 36, color: 'white' }}>
+                      <Settings fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={__('Advanced Automation', 'flux-plugins-common')}
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItem>
+                  <ListItem disableGutters sx={{ py: 0.5 }}>
+                    <ListItemIcon sx={{ minWidth: 36, color: 'white' }}>
+                      <Cloud fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={__('CDN Integration', 'flux-plugins-common')}
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItem>
+                  <ListItem disableGutters sx={{ py: 0.5 }}>
+                    <ListItemIcon sx={{ minWidth: 36, color: 'white' }}>
+                      <Star fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={__('Premium Features Across All Flux Suite Plugins', 'flux-plugins-common')}
+                      primaryTypographyProps={{ variant: 'body2' }}
+                    />
+                  </ListItem>
+                </List>
+                <Button
+                  variant="contained"
+                  color="inherit"
+                  href="https://fluxplugins.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    mt: 1,
+                    backgroundColor: 'white',
+                    color: '#667eea',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    },
+                    fontWeight: 600,
+                  }}
+                >
+                  {__('Get Your License', 'flux-plugins-common')}
+                </Button>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         {licenseError && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -240,18 +323,16 @@ const LicensePageContent = () => {
                         ) : licenseKey && licenseData?.license_is_valid === false ? (
                           <ErrorIcon color="error" sx={{ fontSize: 20 }} />
                         ) : null}
-                        {licenseKey && (
-                          <Tooltip title={__('Revalidate license', 'flux-plugins-common')}>
-                            <IconButton
-                              size="small"
-                              onClick={handleRevalidateLicense}
-                              disabled={isLoading || licenseLoading || activateLicenseMutation.isPending || validateLicenseMutation.isPending || !licenseKey}
-                              sx={{ ml: 0.5 }}
-                            >
-                              <Refresh fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+                        <Tooltip title={__('Revalidate license', 'flux-plugins-common')}>
+                          <IconButton
+                            size="small"
+                            onClick={handleRevalidateLicense}
+                            disabled={isLoading || licenseLoading || activateLicenseMutation.isPending || validateLicenseMutation.isPending || !licenseKey}
+                            sx={{ ml: 0.5 }}
+                          >
+                            <Refresh fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Stack>
                     </InputAdornment>
                   ),
@@ -274,8 +355,7 @@ const LicensePageContent = () => {
             </Stack>
           </Grid>
         </Grid>
-      </Paper>
-    </Container>
+    </PageLayout>
   );
 };
 
