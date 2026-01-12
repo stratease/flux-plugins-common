@@ -797,27 +797,6 @@ class MenuService {
 		$script_url = $this->get_common_library_asset_url( 'js/dist/license-page.bundle.js' );
 		
 		if ( empty( $script_url ) ) {
-			// Troubleshooting: Log detailed information about why the URL is empty
-			// Only log in debug mode to avoid cluttering production logs
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				$common_lib_dir = dirname( dirname( __DIR__ ) );
-				$expected_file = $common_lib_dir . '/src/assets/js/dist/license-page.bundle.js';
-				$assets_dir = $common_lib_dir . '/src/assets';
-				$assets_dir_exists = is_dir( $assets_dir );
-				$dist_dir_exists = is_dir( $common_lib_dir . '/src/assets/js/dist' );
-				$file_exists = file_exists( $expected_file );
-				
-				error_log( 'Flux Plugins Common: License page bundle URL is empty. Debug info:' );
-				error_log( '  - Common lib dir: ' . $common_lib_dir );
-				error_log( '  - Expected file: ' . $expected_file );
-				error_log( '  - Assets dir exists: ' . ( $assets_dir_exists ? 'yes' : 'no' ) );
-				error_log( '  - Dist dir exists: ' . ( $dist_dir_exists ? 'yes' : 'no' ) );
-				error_log( '  - File exists: ' . ( $file_exists ? 'yes' : 'no' ) );
-				if ( $assets_dir_exists ) {
-					$assets_url = plugins_url( '', $assets_dir );
-					error_log( '  - Assets URL (via plugins_url): ' . $assets_url );
-				}
-			}
 			return;
 		}
 
@@ -866,39 +845,10 @@ class MenuService {
 		// This file is at: vendor-prefixed/stratease/flux-plugins-common/src/Services/MenuService.php
 		// Assets are at: vendor-prefixed/stratease/flux-plugins-common/src/assets/
 		// Assets are now in src/ so Strauss will copy them
-		$common_lib_dir = dirname( dirname( __DIR__ ) );
-		$asset_file = $common_lib_dir . '/src/assets/' . $asset_path;
-
-		// Troubleshooting: Log the paths being checked (only in debug mode)
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) {
-			error_log( 'Flux Plugins Common: get_common_library_asset_url called with: ' . $asset_path );
-			error_log( '  - __DIR__: ' . __DIR__ );
-			error_log( '  - Common lib dir: ' . $common_lib_dir );
-			error_log( '  - Asset file path: ' . $asset_file );
-			error_log( '  - Asset file exists: ' . ( file_exists( $asset_file ) ? 'yes' : 'no' ) );
-		}
-
-		// Check if asset exists
-		if ( ! file_exists( $asset_file ) ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) {
-				error_log( 'Flux Plugins Common: Asset file not found at: ' . $asset_file );
-			}
-			return '';
-		}
 
 		// Get the URL using plugins_url - same pattern as CompatibilityService
 		// Use the assets directory directly
-		$assets_dir = $common_lib_dir . '/src/assets';
-		$assets_base_url = plugins_url( '', $assets_dir );
-		$asset_url = $assets_base_url . '/' . $asset_path;
-
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) {
-			error_log( 'Flux Plugins Common: Generated asset URL: ' . $asset_url );
-			error_log( '  - Assets dir: ' . $assets_dir );
-			error_log( '  - Assets base URL: ' . $assets_base_url );
-		}
-
-		return $asset_url;
+		return plugins_url( 'src/assets/' . $asset_path, dirname( __DIR__ ) );
 	}
 
 	/**
