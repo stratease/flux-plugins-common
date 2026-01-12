@@ -13,11 +13,11 @@ module.exports = createBaseWebpackConfig({
 	pluginSlug: 'flux-plugins-common',
 	extends: {
 		entry: {
-			'compatibility-dismiss': './assets/js/src/admin/compatibility-dismiss.js',
-			'license-page': './assets/js/src/admin/license-page.js',
+			'compatibility-dismiss': './src/assets/js/src/admin/compatibility-dismiss.js',
+			'license-page': './src/assets/js/src/admin/license-page.js',
 		},
 		output: {
-			path: path.resolve(__dirname, 'assets/js/dist'),
+			path: path.resolve(__dirname, 'src/assets/js/dist'),
 			filename: '[name].bundle.js',
 			clean: true,
 		},

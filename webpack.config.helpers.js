@@ -43,7 +43,8 @@ function createBaseWebpackConfig(options = {}) {
       extensions: ['.js', '.jsx', '.json'],
       alias: {
         // Alias for shared components from flux-plugins-common
-        '@flux-plugins-common': path.resolve(commonBaseDir, 'assets/js/src'),
+        // Assets are now in src/assets/ so Strauss will copy them
+        '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
         // Plugin-specific alias (can be overridden by extendsConfig)
         [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
       },
@@ -55,7 +56,7 @@ function createBaseWebpackConfig(options = {}) {
           exclude: [
             /node_modules/,
             // Exclude non-React files from React preset
-            /assets\/js\/src\/admin\/(attachment|compatibility-dismiss)\.js$/,
+            /src\/assets\/js\/src\/admin\/(attachment|compatibility-dismiss)\.js$/,
           ],
           use: {
             loader: 'babel-loader',
@@ -74,9 +75,9 @@ function createBaseWebpackConfig(options = {}) {
                 [
                   'babel-plugin-module-resolver',
                   {
-                    root: ['./assets/js/src'],
+                    root: ['./src/assets/js/src'],
                     alias: {
-                      '@flux-plugins-common': path.resolve(commonBaseDir, 'assets/js/src'),
+                      '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
                       [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
                     },
                   },
@@ -90,7 +91,7 @@ function createBaseWebpackConfig(options = {}) {
           exclude: /node_modules/,
           include: [
             // Non-React files that need Babel but not React preset
-            /assets\/js\/src\/admin\/(attachment|compatibility-dismiss)\.js$/,
+            /src\/assets\/js\/src\/admin\/(attachment|compatibility-dismiss)\.js$/,
           ],
           use: {
             loader: 'babel-loader',
@@ -106,9 +107,9 @@ function createBaseWebpackConfig(options = {}) {
                 [
                   'babel-plugin-module-resolver',
                   {
-                    root: ['./assets/js/src'],
+                    root: ['./src/assets/js/src'],
                     alias: {
-                      '@flux-plugins-common': path.resolve(commonBaseDir, 'assets/js/src'),
+                      '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
                       [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
                     },
                   },

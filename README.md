@@ -116,7 +116,7 @@ npm install
 npm run build
 ```
 
-**Important:** The built bundle files (`assets/js/dist/*.bundle.js`) **must be committed** to the repository. These files are required when the library is installed via Composer/Strauss, as plugins need access to the pre-built bundles without requiring a build step.
+**Important:** The built bundle files (`src/assets/js/dist/*.bundle.js`) **must be committed** to the repository. These files are required when the library is installed via Composer/Strauss, as plugins need access to the pre-built bundles without requiring a build step. Assets are stored in `src/assets/` so Strauss will copy them to the vendor-prefixed location.
 
 For development with watch mode:
 

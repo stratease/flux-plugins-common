@@ -3,8 +3,9 @@ node_modules/
 vendor/
 
 # Build outputs
-# Note: assets/js/dist/*.bundle.js files MUST be committed to the repository
+# Note: src/assets/js/dist/*.bundle.js files MUST be committed to the repository
 # so they're available when the library is installed via Composer/Strauss.
+# Assets are in src/assets/ so Strauss will copy them.
 # Only ignore source maps and temporary build files.
 *.bundle.js.map
 *.map

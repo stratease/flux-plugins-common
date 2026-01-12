@@ -220,9 +220,10 @@ class CompatibilityService {
 		add_action( 'admin_enqueue_scripts', function() {
 			// Get the shared library directory path relative to this file.
 			// This file is at: vendor-prefixed/stratease/flux-plugins-common/src/Services/CompatibilityService.php
-			// Assets are at: vendor-prefixed/stratease/flux-plugins-common/assets/
+			// Assets are at: vendor-prefixed/stratease/flux-plugins-common/src/assets/
+			// Assets are now in src/ so Strauss will copy them
 			$shared_lib_dir = dirname( dirname( __DIR__ ) );
-			$shared_lib_url = plugins_url( '', $shared_lib_dir . '/assets' );
+			$shared_lib_url = plugins_url( '', $shared_lib_dir . '/src/assets' );
 
 			// Determine script path based on SCRIPT_DEBUG (development vs production).
 			// Path is relative to the assets directory (which $shared_lib_url points to).
