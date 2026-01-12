@@ -139,6 +139,10 @@ class MenuService {
 	public function do_init() {
 		// Initialize the Flux Suite plugin registry (marketing purposes only).
 		$this->init_plugin_registry();
+
+		// Note: License page and Logs page registration is optional and should be called
+		// by individual plugins if they need these pages. The common library does not
+		// automatically register them.
 	}
 
 	/**
@@ -268,6 +272,10 @@ class MenuService {
 		// Hook into admin_menu to register the license page.
 		// Use method reference instead of closure to ensure $this is available.
 		add_action( 'admin_menu', [ $this, 'do_register_license_page' ], self::MENU_PRIORITY + 1 );
+
+		// Hook into admin_enqueue_scripts to enqueue license page scripts.
+		// This must be separate from page registration to ensure scripts are enqueued at the right time.
+		$this->enqueue_license_page_scripts();
 	}
 
 	/**
@@ -722,13 +730,134 @@ class MenuService {
 	/**
 	 * Render license page.
 	 *
+	 * Renders the React License page component.
+	 * Scripts are enqueued via admin_enqueue_scripts hook when page is registered.
+	 *
 	 * @since 1.0.0
 	 * @return void
 	 */
 	public function render_license_page() {
-		// TODO: Render React LicensePage component.
-		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . esc_html__( 'License', I18n::domain() ) . '</h1></div>';
+		// Render the React app container
+		// Scripts are enqueued automatically via admin_enqueue_scripts hook
+		?>
+		<div class="wrap">
+			<div id="flux-plugins-common-license-app"></div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Enqueue license page scripts.
+	 *
+	 * Enqueues scripts only once, shared across all plugins.
+	 * Uses WordPress action hooks to track enqueue state per request.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private function enqueue_license_page_scripts() {
+		// Ensure scripts are enqueued only once (shared across all plugins).
+		if ( did_action( 'flux_suite/menu_service/enqueue_license_scripts' ) ) {
+			return;
+		}
+
+		/**
+		 * Fires when license page scripts are being enqueued.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'flux_suite/menu_service/enqueue_license_scripts' );
+
+		// Hook into admin_enqueue_scripts to enqueue license page scripts.
+		add_action( 'admin_enqueue_scripts', [ $this, 'do_enqueue_license_scripts' ], 10 );
+	}
+
+	/**
+	 * Enqueue license page scripts callback.
+	 *
+	 * Called by WordPress admin_enqueue_scripts hook.
+	 * Only enqueues if the license page is actually registered.
+	 *
+	 * @since 1.0.0
+	 * @param string $hook Current admin page hook.
+	 * @return void
+	 */
+	public function do_enqueue_license_scripts( $hook ) {
+		// Only load on license page.
+		if ( $hook !== 'flux-suite_page_' . self::LICENSE_PAGE_SLUG ) {
+			return;
+		}
+
+		// Only enqueue if license page is registered
+		if ( ! did_action( 'flux_suite/menu_service/register_license_page' ) ) {
+			return;
+		}
+
+		// Get script URL from common library's own dist folder
+		$script_url = $this->get_common_library_asset_url( 'js/dist/license-page.bundle.js' );
+		
+		if ( empty( $script_url ) ) {
+			return;
+		}
+
+		// Get current user email
+		$current_user = wp_get_current_user();
+		$user_email = $current_user->ID ? $current_user->user_email : '';
+
+		// Enqueue WordPress dependencies
+		wp_enqueue_script( 'wp-api-fetch' );
+		wp_enqueue_script( 'wp-element' );
+		wp_enqueue_script( 'wp-components' );
+		wp_enqueue_script( 'wp-i18n' );
+		wp_enqueue_style( 'wp-components' );
+
+		// Enqueue the license page script
+		wp_enqueue_script(
+			'flux-plugins-common-license-page',
+			$script_url,
+			[ 'wp-api-fetch', 'wp-element', 'wp-components', 'wp-i18n' ],
+			'1.0.0',
+			true
+		);
+
+		// Localize script with WordPress data
+		wp_localize_script( 'flux-plugins-common-license-page', 'fluxPluginsCommon', [
+			'apiUrl' => rest_url( 'flux-plugins-common/v1/' ),
+			'nonce' => wp_create_nonce( 'wp_rest' ),
+			'adminUrl' => admin_url(),
+			'userEmail' => $user_email,
+		] );
+	}
+
+	/**
+	 * Get common library asset URL.
+	 *
+	 * Returns the URL to an asset in the common library's assets directory.
+	 * The common library is self-contained and knows its own location.
+	 * Uses the same pattern as CompatibilityService for consistency.
+	 *
+	 * @since 1.0.0
+	 * @param string $asset_path Relative path from assets directory (e.g., 'js/dist/license-page.bundle.js').
+	 * @return string Asset URL or empty string if not found.
+	 */
+	private function get_common_library_asset_url( $asset_path ) {
+		// Get the common library directory path.
+		// This file is at: vendor-prefixed/stratease/flux-plugins-common/src/Services/MenuService.php
+		// Assets are at: vendor-prefixed/stratease/flux-plugins-common/assets/
+		$common_lib_dir = dirname( dirname( __DIR__ ) );
+		$asset_file = $common_lib_dir . '/assets/' . $asset_path;
+
+		// Check if asset exists
+		if ( ! file_exists( $asset_file ) ) {
+			return '';
+		}
+
+		// Get the URL using plugins_url - same pattern as CompatibilityService
+		// plugins_url('', $path) returns the base URL for that path
+		$assets_base_url = plugins_url( '', $common_lib_dir . '/assets' );
+		$asset_url = $assets_base_url . '/' . $asset_path;
+
+		return $asset_url;
 	}
 
 	/**

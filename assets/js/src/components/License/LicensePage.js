@@ -1,0 +1,298 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Typography,
+  Box,
+  Grid,
+  TextField,
+  Stack,
+  Alert,
+  Button,
+  CircularProgress,
+  InputAdornment,
+  Tooltip,
+  IconButton,
+  Link,
+  Paper,
+  Container,
+} from '@mui/material';
+import { CheckCircle, Error as ErrorIcon, Refresh } from '@mui/icons-material';
+import { __ } from '@wordpress/i18n';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { useLicense, useActivateLicense, useValidateLicense } from '@flux-plugins-common/hooks/useLicense';
+
+// Create a client for this page
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// Simple theme for license page
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
+
+/**
+ * License page component
+ * Shared across all Flux Plugins
+ */
+const LicensePageContent = () => {
+  const [localLicenseKey, setLocalLicenseKey] = useState('');
+  const [licenseActivationError, setLicenseActivationError] = useState(null);
+  const [isLicenseInitialized, setIsLicenseInitialized] = useState(false);
+  
+  // React Query hooks for data fetching
+  const { data: licenseData, isLoading: licenseLoading, error: licenseError } = useLicense();
+  const activateLicenseMutation = useActivateLicense();
+  const validateLicenseMutation = useValidateLicense();
+
+  // Debounce timer for license activation
+  const debounceTimerRef = useRef(null);
+
+  // Initialize license key ONCE from license data on first load only
+  useEffect(() => {
+    if (!isLicenseInitialized && licenseData && typeof licenseData === 'object') {
+      if (licenseData.license_key !== undefined) {
+        setLocalLicenseKey(licenseData.license_key || '');
+        setIsLicenseInitialized(true);
+      }
+    }
+  }, [licenseData, isLicenseInitialized]);
+
+  // Debounced license activation function
+  const debouncedActivateLicense = useCallback((key) => {
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
+      const trimmedKey = key.trim();
+      // Activate if key is not empty
+      if (trimmedKey) {
+        activateLicenseMutation.mutate(trimmedKey);
+      }
+    }, 1000); // 1 second debounce
+  }, [activateLicenseMutation]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+  
+  // Monitor license activation mutation for errors
+  useEffect(() => {
+    if (activateLicenseMutation.isError) {
+      const error = activateLicenseMutation.error;
+      const errorData = error?.data || {};
+      const errorCode = errorData.error_code || error?.code || 'unknown_error';
+      const errorMessage = errorData.message || error?.message || __('License activation failed', 'flux-plugins-common');
+      
+      setLicenseActivationError({
+        success: false,
+        error: errorCode,
+        message: errorMessage,
+      });
+    } else if (activateLicenseMutation.isSuccess) {
+      // Clear error on success
+      setLicenseActivationError(null);
+    }
+  }, [activateLicenseMutation.isError, activateLicenseMutation.isSuccess, activateLicenseMutation.error]);
+
+  const handleLicenseKeyChange = (event) => {
+    const newLicenseKey = event.target.value;
+    
+    // Update local state immediately for instant feedback
+    setLocalLicenseKey(newLicenseKey);
+    
+    // Clear any previous activation errors
+    setLicenseActivationError(null);
+    
+    // Trigger debounced activation on change
+    if (newLicenseKey.trim()) {
+      debouncedActivateLicense(newLicenseKey);
+    } else {
+      // Clear debounce timer if field is empty
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    }
+  };
+
+  const handleRevalidateLicense = async () => {
+    if (!localLicenseKey) {
+      return;
+    }
+    
+    // First activate the license to ensure it's activated
+    try {
+      await activateLicenseMutation.mutateAsync(localLicenseKey);
+      // After activation succeeds, validate the license
+      await validateLicenseMutation.mutateAsync();
+    } catch (error) {
+      // Error handling is done by the mutation hooks
+      // If activation fails, we still try to validate
+      await validateLicenseMutation.mutateAsync();
+    }
+  };
+
+  // Format date for display using WordPress date formatting
+  const formatLicenseDate = (dateString) => {
+    if (!dateString) {
+      return null;
+    }
+    
+    try {
+      // Use WordPress date formatting if available
+      if (window.wp?.date?.dateI18n) {
+        // WordPress date format from settings
+        const dateFormat = window.wp?.date?.settings?.formats?.date || 'F j, Y';
+        const timeFormat = window.wp?.date?.settings?.formats?.time || 'g:i a';
+        const format = `${dateFormat} ${timeFormat}`;
+        
+        // Parse the GMT date and format it
+        const date = new Date(dateString + ' UTC');
+        return window.wp.date.dateI18n(format, date);
+      } else {
+        // Fallback to JavaScript date formatting
+        const date = new Date(dateString + ' UTC');
+        return date.toLocaleString();
+      }
+    } catch (e) {
+      // Fallback to simple date string
+      return dateString;
+    }
+  };
+
+  const isLoading = licenseLoading;
+  const licenseKey = localLicenseKey;
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Paper elevation={1} sx={{ p: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          {__('License', 'flux-plugins-common')}
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          {__('Enter your Flux Plugins license key to enable premium features across all Flux Plugins.', 'flux-plugins-common')}{' '}
+          <Link
+            href="https://fluxplugins.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ textDecoration: 'none' }}
+          >
+            {__('Purchase a license.', 'flux-plugins-common')}
+          </Link>
+        </Typography>
+
+        {licenseError && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {licenseError.message || __('Failed to load license information', 'flux-plugins-common')}
+          </Alert>
+        )}
+
+        {licenseActivationError && (
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3 }}
+            onClose={() => setLicenseActivationError(null)}
+          >
+            <Typography variant="body2" component="div">
+              <strong>{__('License Activation Failed', 'flux-plugins-common')}</strong>
+              <Typography variant="body2" component="div" sx={{ mt: 0.5 }}>
+                {licenseActivationError.message || __('An error occurred while activating your license. Please check your license key and try again.', 'flux-plugins-common')}
+              </Typography>
+            </Typography>
+          </Alert>
+        )}
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={8}>
+            <Stack spacing={2}>
+              <TextField
+                fullWidth
+                label={__('License Key', 'flux-plugins-common')}
+                placeholder={__('Enter your license key', 'flux-plugins-common')}
+                value={licenseKey}
+                disabled={isLoading || activateLicenseMutation.isPending}
+                onChange={handleLicenseKeyChange}
+                variant="outlined"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        {activateLicenseMutation.isPending || validateLicenseMutation.isPending ? (
+                          <CircularProgress size={20} />
+                        ) : licenseKey && licenseData?.license_is_valid ? (
+                          <CheckCircle color="success" sx={{ fontSize: 20 }} />
+                        ) : licenseKey && licenseData?.license_is_valid === false ? (
+                          <ErrorIcon color="error" sx={{ fontSize: 20 }} />
+                        ) : null}
+                        {licenseKey && (
+                          <Tooltip title={__('Revalidate license', 'flux-plugins-common')}>
+                            <IconButton
+                              size="small"
+                              onClick={handleRevalidateLicense}
+                              disabled={isLoading || licenseLoading || activateLicenseMutation.isPending || validateLicenseMutation.isPending || !licenseKey}
+                              sx={{ ml: 0.5 }}
+                            >
+                              <Refresh fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              
+              {licenseKey && licenseData?.license_is_valid && licenseData?.license_last_valid_date && (
+                <Typography variant="body2" color="text.secondary">
+                  {__('Last validated:', 'flux-plugins-common')} {formatLicenseDate(licenseData.license_last_valid_date)}
+                </Typography>
+              )}
+
+              {licenseKey && licenseData?.license_is_valid && (
+                <Alert severity="success">
+                  <Typography variant="body2">
+                    {__('Your license is active and valid. Premium features are enabled across all Flux Plugins.', 'flux-plugins-common')}
+                  </Typography>
+                </Alert>
+              )}
+            </Stack>
+          </Grid>
+        </Grid>
+      </Paper>
+    </Container>
+  );
+};
+
+/**
+ * License page with providers
+ * This is the entry point that sets up React Query and Material-UI
+ */
+const LicensePage = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <LicensePageContent />
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default LicensePage;
+

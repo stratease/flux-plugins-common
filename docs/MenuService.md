@@ -24,13 +24,15 @@ These are completely separate classes with separate singleton instances. This me
 The `MenuService` uses **WordPress action hooks** (`did_action()` / `do_action()`) to track registration state per request. This ensures all plugins share the same state, regardless of their namespace prefixing.
 
 **WordPress action hooks used:**
-- `flux_suite/common/menu_registered` - Fired when "Flux Suite" menu is registered
-- `flux_suite/common/license_page_registered` - Fired when License page is registered
-- `flux_suite/common/logs_page_registered` - Fired when Logs page is registered
-- `flux_suite/common/settings_page_registered` - Fired when Settings page is registered
+- `flux_suite/menu_service/register_top_level_menu` - Fired when top-level menu is registered
+- `flux_suite/menu_service/register_license_page` - Fired when License page is registered
+- `flux_suite/menu_service/register_logs_page` - Fired when Logs page is registered
+- `flux_suite/menu_service/register_settings_page` - Fired when Settings page is registered
+- `flux_suite/menu_service/init_plugin_registry` - Fired when plugin registry is initialized
 
-**Static property for settings tabs:**
-- `MenuService::$settings_tabs` - Static array storing all registered settings tabs (shared across all plugin instances per request)
+**Static properties (shared across all plugin instances per request):**
+- `MenuService::$settings_tabs` - Array storing all registered settings tabs
+- `MenuService::$registered_plugins` - Array storing all registered Flux Suite plugins
 
 ### Why This Works
 
@@ -82,7 +84,7 @@ $menu_service->register_settings_page(
 
 Registers the "Flux Suite" top-level menu. This is automatically called by other registration methods and is idempotent (safe to call multiple times).
 
-**Uses WordPress action hook:** `flux_suite/common/menu_registered`
+**Uses WordPress action hook:** `flux_suite/menu_service/register_top_level_menu`
 
 ### `register_submenu_page( $slug, $title, $callback, $capability = 'manage_options' )`
 
@@ -98,13 +100,13 @@ Registers a plugin-specific submenu page under "Flux Suite".
 
 Registers the shared License page. Only registers once, even if called by multiple plugins.
 
-**Uses WordPress action hook:** `flux_suite/common/license_page_registered`
+**Uses WordPress action hook:** `flux_suite/menu_service/register_license_page`
 
 ### `register_logs_page()`
 
 Registers the shared Logs page. Only registers once, even if called by multiple plugins.
 
-**Uses WordPress action hook:** `flux_suite/common/logs_page_registered`
+**Uses WordPress action hook:** `flux_suite/menu_service/register_logs_page`
 
 ### `register_settings_page( $tab_component, $tab_label )`
 
@@ -115,14 +117,35 @@ Registers a settings tab. Multiple plugins can call this to add their own tabs t
 - `$tab_label` - Tab label displayed in the UI
 
 **Uses WordPress action hook and static property:**
-- `flux_suite/common/settings_page_registered` - Fired when Settings page is registered
+- `flux_suite/menu_service/register_settings_page` - Fired when Settings page is registered
 - `MenuService::$settings_tabs` - Static array storing all tabs (shared across all plugin instances per request)
 
 ### `get_settings_tabs()`
 
-Retrieves all registered settings tabs from WordPress options.
+Retrieves all registered settings tabs from static property.
 
 **Returns:** Array of tab configurations with 'component' and 'label' keys.
+
+### `get_registered_plugins()`
+
+Retrieves all registered Flux Suite plugins, checks their activation status, and sorts them appropriately.
+
+**Returns:** Array of plugin configurations with activation status. Plugins are sorted: inactive first, then planned, then active (at bottom).
+
+**Plugin Status:**
+- **Active**: Plugin has a `plugin_file` and `is_plugin_active()` returns true
+- **Planned**: Plugin has no `plugin_file` (not yet developed)
+- **Inactive**: Plugin has a `plugin_file` but is not active
+
+### `render_top_level_page()`
+
+Renders the Flux Suite overview page displaying all registered plugins in an attractive grid layout. This is the default page shown when clicking the "Flux Suite" top-level menu.
+
+**Features:**
+- Responsive CSS grid layout
+- Color-coded status indicators (green for active, yellow for planned, gray for inactive)
+- Links to plugin admin pages (for active plugins) or marketing pages (for planned plugins)
+- Automatic sorting with active plugins at the bottom
 
 ## Constants
 
@@ -132,17 +155,37 @@ Retrieves all registered settings tabs from WordPress options.
 - `SETTINGS_PAGE_SLUG` - 'flux-suite-settings'
 - `LOGS_PAGE_SLUG` - 'flux-suite-logs'
 
+## Flux Suite Plugin Registry
+
+The `MenuService` includes a centralized plugin registry for marketing all Flux Suite plugins. This feature:
+
+- **Centralized Management**: All plugins are registered in `MenuService::init_plugin_registry()` for marketing purposes only
+- **Automatic Detection**: Active plugins are automatically detected using WordPress's `is_plugin_active()` function
+- **Smart Sorting**: Plugins are sorted by status - inactive first, then planned, then active (at bottom)
+- **Status Indicators**: Plugins show as "Active", "Planned", or "Inactive" with appropriate styling
+- **Marketing Links**: Planned plugins link to marketing pages on fluxplugins.com
+
+### Important Notes
+
+- **Individual plugins should NOT register themselves** - All registrations are managed centrally in `MenuService`
+- The registry is initialized automatically during `MenuService::init()`
+- Plugins with a `plugin_file` are checked for activation status
+- Plugins without a `plugin_file` are marked as "Planned"
+- The top-level "Flux Suite" menu page displays all registered plugins
+
 ## Best Practices
 
 1. **Don't call registration methods multiple times** - They're idempotent, but unnecessary calls add overhead
 2. **Use consistent slugs** - Plugin-specific slugs should be unique and descriptive
 3. **Register settings tabs early** - Register tabs during plugin initialization to ensure they appear
-4. **Trust the shared state** - The WordPress options ensure pages only appear once, even with multiple plugins
+4. **Trust the shared state** - WordPress action hooks ensure pages only appear once, even with multiple plugins
+5. **Don't register plugins individually** - All plugin registrations are managed centrally in `MenuService::init_plugin_registry()`
 
 ## Technical Notes
 
-- Uses `get_site_option()` / `update_site_option()` for multisite compatibility
+- Uses WordPress action hooks (`did_action()` / `do_action()`) for per-request state management
 - All registration checks happen before WordPress's `admin_menu` action fires
 - The service hooks into `admin_menu` at priority 30 (as specified)
 - Menu slugs are constants to ensure consistency across plugins
+- Plugin registry uses static properties shared across all plugin instances per request
 

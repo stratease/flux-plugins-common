@@ -19,6 +19,18 @@
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "archive": {
+        "exclude": [
+            "node_modules",
+            ".git",
+            ".gitignore",
+            "package.json",
+            "package-lock.json",
+            "webpack.config.js",
+            "webpack.config.base.js",
+            "webpack.config.helpers.js"
+        ]
+    }
 }
 

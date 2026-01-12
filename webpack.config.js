@@ -1,31 +1,30 @@
 const path = require('path');
+const { createBaseWebpackConfig } = require('./webpack.config.helpers');
 
-module.exports = {
-	entry: {
-		'compatibility-dismiss': './assets/js/src/admin/compatibility-dismiss.js',
+/**
+ * Webpack configuration for flux-plugins-common
+ * 
+ * Builds standalone bundles for the common library:
+ * - compatibility-dismiss: Simple JS bundle
+ * - license-page: React License page bundle (standalone)
+ */
+module.exports = createBaseWebpackConfig({
+	pluginDir: __dirname,
+	pluginSlug: 'flux-plugins-common',
+	extends: {
+		entry: {
+			'compatibility-dismiss': './assets/js/src/admin/compatibility-dismiss.js',
+			'license-page': './assets/js/src/admin/license-page.js',
+		},
+		output: {
+			path: path.resolve(__dirname, 'assets/js/dist'),
+			filename: '[name].bundle.js',
+			clean: true,
+		},
+		externals: {
+			jquery: 'jQuery',
+			// WordPress globals are already in base config
+		},
 	},
-	output: {
-		path: path.resolve(__dirname, 'assets/js/dist'),
-		filename: '[name].bundle.js',
-	},
-	module: {
-		rules: [
-			{
-				test: /\.js$/,
-				exclude: /node_modules/,
-				use: {
-					loader: 'babel-loader',
-					options: {
-						presets: ['@babel/preset-env'],
-					},
-				},
-			},
-		],
-	},
-	externals: {
-		jquery: 'jQuery',
-	},
-	mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-	devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
-};
+});
 

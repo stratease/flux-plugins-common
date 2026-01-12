@@ -7,9 +7,10 @@ Shared library for the Flux Plugins suite providing common services, React compo
 This library provides reusable components for all Flux Plugins, including:
 
 - **Main Initialization Service** (`FluxPlugins`) - Single entry point for plugin initialization
-- **Menu System** (`MenuService`) - Centralized WordPress admin menu registration
+- **Menu System** (`MenuService`) - Centralized WordPress admin menu registration with Flux Suite plugin registry
 - **Compatibility Service** (`CompatibilityService`) - Plugin/API version compatibility validation and notices
 - **Account ID Service** - Shared account UUID management
+- **I18n Service** - Centralized internationalization and text domain management
 - **Logger Service** - Standardized logging with database handler
 - **External API Client** - Shared API client for license validation and compatibility checks
 - **React Components** - Shared UI components and theme
@@ -24,6 +25,7 @@ This library provides reusable components for all Flux Plugins, including:
 **Solution:** The library uses **WordPress action hooks** (`did_action()` / `do_action()`) to track shared state per request across all plugins. This ensures:
 
 - Menu registration state is shared (menu only appears once even if multiple plugins register it)
+- Plugin registry is initialized once (centralized marketing overview)
 - License page registration is shared (appears once)
 - Logs page registration is shared (appears once)
 - Settings page tabs are collected from all plugins
@@ -48,6 +50,7 @@ All hooks follow the WordPress standard pattern: `{plugin_namespace}/{class_name
 - `flux_suite/menu_service/register_license_page` - Fired when License page is registered
 - `flux_suite/menu_service/register_logs_page` - Fired when Logs page is registered
 - `flux_suite/menu_service/register_settings_page` - Fired when Settings page is registered
+- `flux_suite/menu_service/init_plugin_registry` - Fired when plugin registry is initialized
 
 **Compatibility Service Hooks:**
 - `flux_suite/compatibility_service/assets_enqueued` - Fired when compatibility assets are enqueued
@@ -113,6 +116,8 @@ npm install
 npm run build
 ```
 
+**Important:** The built bundle files (`assets/js/dist/*.bundle.js`) **must be committed** to the repository. These files are required when the library is installed via Composer/Strauss, as plugins need access to the pre-built bundles without requiring a build step.
+
 For development with watch mode:
 
 ```bash
@@ -127,16 +132,17 @@ In your plugin's main file, initialize the common library:
 use FluxPlugins\Common\FluxPlugins;
 
 // Initialize the common library
-FluxPlugins::init('your-plugin-slug', '1.0.0');
+FluxPlugins::init('your-plugin-slug', '1.0.0', 'your-plugin-text-domain');
 ```
 
 This single call will:
 - Ensure account ID exists
 - Register the "Flux Suite" top-level menu (if not already registered)
+- Initialize the Flux Suite plugin registry (marketing overview page)
 - Register License page (shared across all plugins)
 - Register Logs page (shared across all plugins)
 - Initialize compatibility validation system for your plugin
-- Initialize logger with your plugin slug
+- Set up internationalization with your plugin's text domain
 
 ## Factory Pattern
 
@@ -153,7 +159,7 @@ All services follow the singleton factory pattern for consistency and maintainab
 
 ```php
 // Initialize the library (once per plugin)
-FluxPlugins::init('your-plugin-slug', '1.0.0');
+FluxPlugins::init('your-plugin-slug', '1.0.0', 'your-plugin-text-domain');
 
 // Access services using factory methods (no plugin slug needed)
 $validator = CompatibilityService::get_validator(); // Uses current plugin from init()
@@ -164,7 +170,7 @@ $compatibility_service = CompatibilityService::get_instance();
 $other_validator = CompatibilityService::get_validator('other-plugin-slug');
 ```
 
-**Key Principle:** Once you call `FluxPlugins::init($plugin_slug, $version)`, you don't need to pass the plugin slug again when accessing services. The services track the current plugin internally, reducing moving parts and improving maintainability.
+**Key Principle:** Once you call `FluxPlugins::init($plugin_slug, $version, $text_domain)`, you don't need to pass the plugin slug again when accessing services. The services track the current plugin internally, reducing moving parts and improving maintainability.
 
 ## Compatibility System
 
@@ -178,6 +184,54 @@ The compatibility system validates plugin/API version compatibility and displays
 **Shared assets:**
 - JavaScript is only enqueued once across all plugins
 - Uses `did_action()` to ensure no duplicate enqueuing
+
+## Flux Suite Plugin Registry
+
+The `MenuService` includes a centralized plugin registry for marketing all Flux Suite plugins. This registry:
+
+- **Centralized Management**: All plugins are registered in `MenuService::init_plugin_registry()` for marketing purposes
+- **Automatic Detection**: Active plugins are automatically detected using WordPress's `is_plugin_active()` function
+- **Smart Sorting**: Plugins are sorted by status - inactive first, then planned, then active (at bottom)
+- **Status Indicators**: Plugins show as "Active", "Planned", or "Inactive" with appropriate styling
+- **Marketing Links**: Planned plugins link to marketing pages on fluxplugins.com
+
+### How It Works
+
+1. Plugins are hard-coded in `MenuService::init_plugin_registry()` during initialization
+2. When a plugin has a `plugin_file` defined, the system checks if it's active
+3. Active plugins automatically show as "Active" and sort to the bottom
+4. Plugins without a `plugin_file` are marked as "Planned" and link to marketing pages
+5. The top-level "Flux Suite" menu page displays all plugins in an attractive grid layout
+
+### Adding New Plugins
+
+To add a new plugin to the registry, edit `MenuService::init_plugin_registry()`:
+
+```php
+// For an active plugin:
+$this->add_plugin_to_registry(
+    'flux-new-plugin',
+    __( 'New Plugin', I18n::domain() ),
+    __( 'Description of the new plugin.', I18n::domain() ),
+    'flux-new-plugin/flux-new-plugin.php', // Plugin file path
+    'admin.php?page=flux-new-plugin',        // Admin URL
+    'https://fluxplugins.com/new-plugin',    // Marketing URL
+    'dashicons-admin-generic'                // Icon
+);
+
+// For a planned plugin:
+$this->add_plugin_to_registry(
+    'flux-planned-plugin',
+    __( 'Planned Plugin', I18n::domain() ),
+    __( 'Description of the planned plugin.', I18n::domain() ),
+    null, // No plugin file = Planned
+    null,
+    'https://fluxplugins.com/planned-plugin',
+    'dashicons-admin-generic'
+);
+```
+
+**Important**: Individual plugins should NOT register themselves. All registrations are managed centrally in `MenuService` for marketing purposes only.
 
 ## Documentation
 
