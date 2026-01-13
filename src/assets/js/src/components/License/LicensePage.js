@@ -19,13 +19,14 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import { CheckCircle, Error as ErrorIcon, Refresh, AutoAwesome, Settings, Cloud, Star } from '@mui/icons-material';
+import { CheckCircle, Error as ErrorIcon, Refresh, AutoAwesome, Settings, Cloud, Star, Visibility, VisibilityOff, ContentCopy, Check } from '@mui/icons-material';
 import { __ } from '@wordpress/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { useLicense, useActivateLicense, useValidateLicense } from '@flux-plugins-common/hooks/useLicense';
-import { PageLayout } from '@flux-plugins-common/components/PageLayout';
+import { useLicense, useActivateLicense, useValidateLicense, useAccountId } from '../../hooks/useLicense';
+import { PageLayout } from '../PageLayout';
+import copy from 'clipboard-copy';
 
 // Create a client for this page
 const queryClient = new QueryClient({
@@ -52,9 +53,12 @@ const LicensePageContent = () => {
   const [localLicenseKey, setLocalLicenseKey] = useState('');
   const [licenseActivationError, setLicenseActivationError] = useState(null);
   const [isLicenseInitialized, setIsLicenseInitialized] = useState(false);
+  const [showAccountId, setShowAccountId] = useState(false);
+  const [copiedAccountId, setCopiedAccountId] = useState(false);
   
   // React Query hooks for data fetching
   const { data: licenseData, isLoading: licenseLoading, error: licenseError } = useLicense();
+  const { data: accountIdData, isLoading: accountIdLoading } = useAccountId();
   const activateLicenseMutation = useActivateLicense();
   const validateLicenseMutation = useValidateLicense();
 
@@ -183,9 +187,79 @@ const LicensePageContent = () => {
 
   const isLoading = licenseLoading;
   const licenseKey = localLicenseKey;
+  const accountId = accountIdData?.account_id || '';
+
+  // Handle copy account ID to clipboard
+  const handleCopyAccountId = async () => {
+    if (!accountId) {
+      return;
+    }
+    
+    try {
+      await copy(accountId);
+      setCopiedAccountId(true);
+      setTimeout(() => {
+        setCopiedAccountId(false);
+      }, 2000);
+    } catch (err) {
+      // Copy failed - could show an error message to user
+      console.error('Failed to copy account ID:', err);
+    }
+  };
 
   return (
     <PageLayout title={__('License', 'flux-plugins-common')}>
+      {/* Account ID Section - At the top for technical support reference */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {__('Account ID', 'flux-plugins-common')}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+          {__('Your account ID is used for technical support. Please provide this when contacting support.', 'flux-plugins-common')}
+        </Typography>
+        <TextField
+          fullWidth
+          value={accountIdLoading ? __('Loading...', 'flux-plugins-common') : accountId}
+          disabled
+          type={showAccountId ? 'text' : 'password'}
+          variant="outlined"
+          size="small"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <Tooltip title={showAccountId ? __('Hide Account ID', 'flux-plugins-common') : __('Show Account ID', 'flux-plugins-common')}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowAccountId(!showAccountId)}
+                      edge="end"
+                      sx={{ ml: 0.5 }}
+                    >
+                      {showAccountId ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={copiedAccountId ? __('Copied!', 'flux-plugins-common') : __('Copy Account ID', 'flux-plugins-common')}>
+                    <IconButton
+                      size="small"
+                      onClick={handleCopyAccountId}
+                      disabled={!accountId || accountIdLoading}
+                      edge="end"
+                    >
+                      {copiedAccountId ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            '& .MuiInputBase-input': {
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+            },
+          }}
+        />
+      </Box>
       {licenseKey && licenseData?.license_is_valid ? (
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
             {__('Your license provides access to download and use all plugins in the Flux Suite.', 'flux-plugins-common')}{' '}

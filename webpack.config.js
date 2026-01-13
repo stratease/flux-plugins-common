@@ -9,22 +9,17 @@ const { createBaseWebpackConfig } = require('./webpack.config.helpers');
  * - license-page: React License page bundle (standalone)
  */
 module.exports = createBaseWebpackConfig({
-	pluginDir: __dirname,
-	pluginSlug: 'flux-plugins-common',
-	extends: {
-		entry: {
-			'compatibility-dismiss': './src/assets/js/src/admin/compatibility-dismiss.js',
-			'license-page': './src/assets/js/src/admin/license-page.js',
-		},
-		output: {
-			path: path.resolve(__dirname, 'src/assets/js/dist'),
-			filename: '[name].bundle.js',
-			clean: true,
-		},
-		externals: {
-			jquery: 'jQuery',
-			// WordPress globals are already in base config
-		},
-	},
+  pluginDir: __dirname,
+  pluginSlug: 'flux-plugins-common',
+  extends: {
+    entry: {
+      'compatibility-dismiss': './src/assets/js/src/admin/compatibility-dismiss.js',
+      'license-page': './src/assets/js/src/admin/license-page.js',
+    },
+    output: {
+      path: path.resolve(__dirname, 'src/assets/js/dist'),
+      filename: '[name].bundle.js',
+      clean: true,
+    },
+  },
 });
-

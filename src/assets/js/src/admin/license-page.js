@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import LicensePage from '@flux-plugins-common/components/License/LicensePage';
+import LicensePage from '../components/License/LicensePage';
 
 // Initialize React app when DOM is ready
 (function() {

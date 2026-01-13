@@ -12,7 +12,9 @@ import { Box } from '@mui/material';
  */
 const BrandIcon = ({ size = 40, sx = {}, ...props }) => {
   // Use require to load the image asset
-  // Webpack will handle the asset resolution via the alias
+  // Component location: src/assets/js/src/components/PageLayout/BrandIcon.js
+  // Image location: src/assets/images/cropped-flux-icon-rounded-square.webp
+  // Using alias for cleaner imports - webpack resolves this via resolve.alias
   const iconPath = require('@flux-plugins-common/images/cropped-flux-icon-rounded-square.webp');
 
   return (

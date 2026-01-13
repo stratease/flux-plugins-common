@@ -9,6 +9,7 @@
 namespace FluxPlugins\Common\Http\Controllers;
 
 use FluxPlugins\Common\License\LicenseService;
+use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Api\ExternalApiClient;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -84,6 +85,14 @@ class LicenseController {
 			[
 				'methods' => 'POST',
 				'callback' => [ $this, 'validate_license' ],
+				'permission_callback' => [ $this, 'check_permissions' ],
+			],
+		] );
+
+		register_rest_route( 'flux-plugins-common/v1', '/account-id', [
+			[
+				'methods' => 'GET',
+				'callback' => [ $this, 'get_account_id' ],
 				'permission_callback' => [ $this, 'check_permissions' ],
 			],
 		] );
@@ -229,6 +238,28 @@ class LicenseController {
 			return $this->create_success_response( $response_data, 'License validation completed' );
 		} catch ( \Exception $e ) {
 			return $this->create_error_response( 'Failed to validate license: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Get account ID.
+	 *
+	 * @since 1.0.0
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response Response object.
+	 */
+	public function get_account_id( WP_REST_Request $request ) {
+		try {
+			$account_service = AccountIdService::get_instance();
+			$account_id = $account_service->get_account_id();
+			
+			$response_data = [
+				'account_id' => $account_id,
+			];
+			
+			return $this->create_success_response( $response_data, 'Account ID retrieved successfully' );
+		} catch ( \Exception $e ) {
+			return $this->create_error_response( 'Failed to retrieve account ID: ' . $e->getMessage() );
 		}
 	}
 

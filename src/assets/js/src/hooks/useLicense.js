@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { licenseApiService } from '@flux-plugins-common/services/licenseApi';
+import { licenseApiService } from '../services/licenseApi';
 
 /**
  * React Query hook for fetching license information
@@ -73,6 +73,19 @@ export const useValidateLicense = () => {
         });
       }
     },
+  });
+};
+
+/**
+ * React Query hook for fetching account ID
+ * Works across all plugins using the shared account ID system
+ */
+export const useAccountId = () => {
+  return useQuery({
+    queryKey: ['account-id'],
+    queryFn: () => licenseApiService.getAccountId(),
+    staleTime: Infinity, // Account ID never changes, so cache forever
+    retry: 2,
   });
 };
 

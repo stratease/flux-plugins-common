@@ -84,6 +84,14 @@ class LicenseApiService {
       method: 'POST',
     });
   }
+
+  /**
+   * Get account ID
+   * @returns {Promise} Account ID data
+   */
+  async getAccountId() {
+    return this.request(`/${this.namespace}/account-id`);
+  }
 }
 
 // Export singleton instance

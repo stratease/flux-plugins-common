@@ -1,5 +1,4 @@
 const path = require('path');
-
 const fs = require('fs');
 
 /**
@@ -7,20 +6,15 @@ const fs = require('fs');
  * This is used to resolve paths relative to the common library
  */
 function getCommonBaseDir() {
-  // Try to find flux-plugins-common in node_modules or vendor-prefixed
-  // This works when the library is installed via Composer
-  const possiblePaths = [
-    path.resolve(__dirname),
-    path.resolve(process.cwd(), 'vendor-prefixed/stratease/flux-plugins-common'),
-  ];
-
-  for (const possiblePath of possiblePaths) {
-    if (fs.existsSync(possiblePath) && fs.existsSync(path.join(possiblePath, 'package.json'))) {
-      return possiblePath;
-    }
+  // When building common lib itself, use __dirname
+  if (fs.existsSync(path.join(__dirname, 'package.json'))) {
+    return __dirname;
   }
-
-  // Fallback to __dirname
+  // When used by plugins, try vendor-prefixed
+  const vendorPath = path.resolve(process.cwd(), 'vendor-prefixed/stratease/flux-plugins-common');
+  if (fs.existsSync(vendorPath) && fs.existsSync(path.join(vendorPath, 'package.json'))) {
+    return vendorPath;
+  }
   return __dirname;
 }
 
@@ -36,85 +30,46 @@ function getCommonBaseDir() {
 function createBaseWebpackConfig(options = {}) {
   const { pluginDir, pluginSlug, extends: extendsConfig = {} } = options;
   const commonBaseDir = getCommonBaseDir();
+  const isBuildingCommonLib = pluginDir === __dirname;
 
   // Base config for React and WordPress
   const baseConfig = {
     resolve: {
       extensions: ['.js', '.jsx', '.json'],
       alias: {
-        // Alias for shared components from flux-plugins-common
-        // Assets are now in src/assets/ so Strauss will copy them
-        '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
-        // Alias for images directory
+        // More specific aliases must come first
         '@flux-plugins-common/images': path.resolve(commonBaseDir, 'src/assets/images'),
-        // Plugin-specific alias (can be overridden by extendsConfig)
-        [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
+        '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
+        ...(pluginDir && { [`@${pluginSlug}`]: path.resolve(pluginDir, 'assets/js/src') }),
       },
     },
     module: {
       rules: [
         {
           test: /\.jsx?$/,
-          exclude: [
-            /node_modules/,
-            // Exclude non-React files from React preset
-            /src\/assets\/js\/src\/admin\/(attachment|compatibility-dismiss)\.js$/,
-          ],
-          use: {
-            loader: 'babel-loader',
-            options: {
-              presets: [
-                ['@babel/preset-env', {
-                  targets: {
-                    browsers: ['> 1%', 'last 2 versions', 'ie >= 11'],
-                  },
-                }],
-                ['@babel/preset-react', {
-                  runtime: 'automatic',
-                }],
-              ],
-              plugins: [
-                [
-                  'babel-plugin-module-resolver',
-                  {
-                    root: ['./src/assets/js/src'],
-                    alias: {
-                      '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
-                      '@flux-plugins-common/images': path.resolve(commonBaseDir, 'src/assets/images'),
-                      [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
-                    },
-                  },
-                ],
-              ],
-            },
-          },
-        },
-        {
-          test: /\.js$/,
           exclude: /node_modules/,
-          include: [
-            // Non-React files that need Babel but not React preset
-            /src\/assets\/js\/src\/admin\/(attachment|compatibility-dismiss)\.js$/,
-          ],
           use: {
             loader: 'babel-loader',
             options: {
               presets: [
                 ['@babel/preset-env', {
                   targets: {
-                    browsers: ['> 1%', 'last 2 versions', 'ie >= 11'],
+                    browsers: ['> 1%', 'last 2 versions'],
                   },
                 }],
+                // Always include React preset since common lib has React components
+                ['@babel/preset-react', { runtime: 'automatic' }],
               ],
               plugins: [
+                // Use module resolver for aliases (works for both common lib and plugins)
                 [
                   'babel-plugin-module-resolver',
                   {
-                    root: ['./src/assets/js/src'],
                     alias: {
-                      '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
+                      // More specific aliases must come first
                       '@flux-plugins-common/images': path.resolve(commonBaseDir, 'src/assets/images'),
-                      [`@${pluginSlug}`]: pluginDir ? path.resolve(pluginDir, 'assets/js/src') : undefined,
+                      '@flux-plugins-common': path.resolve(commonBaseDir, 'src/assets/js/src'),
+                      ...(pluginDir && { [`@${pluginSlug}`]: path.resolve(pluginDir, 'assets/js/src') }),
                     },
                   },
                 ],
@@ -127,7 +82,6 @@ function createBaseWebpackConfig(options = {}) {
           use: ['style-loader', 'css-loader'],
         },
         {
-          // Handle image files
           test: /\.(png|jpe?g|gif|svg|webp)$/i,
           type: 'asset/resource',
           generator: {
@@ -152,44 +106,34 @@ function createBaseWebpackConfig(options = {}) {
     devtool: process.env.NODE_ENV === 'production' ? false : 'source-map',
   };
 
-  // Merge with extends config using webpack-merge pattern
-  return mergeConfig(baseConfig, extendsConfig);
-}
-
-/**
- * Simple deep merge utility for webpack config objects
- * Handles arrays specially (replaces instead of merging)
- */
-function mergeConfig(base, extendsConfig) {
-  const result = { ...base };
-
-  for (const key in extendsConfig) {
-    if (extendsConfig.hasOwnProperty(key)) {
-      const baseValue = result[key];
-      const extendsValue = extendsConfig[key];
-
-      if (key === 'alias' && baseValue && typeof baseValue === 'object' && typeof extendsValue === 'object') {
-        // Merge alias objects
-        result[key] = { ...baseValue, ...extendsValue };
-      } else if (Array.isArray(baseValue) && Array.isArray(extendsValue)) {
-        // Replace arrays (webpack rules, plugins, etc.)
-        result[key] = extendsValue;
-      } else if (typeof baseValue === 'object' && baseValue !== null && typeof extendsValue === 'object' && extendsValue !== null && !Array.isArray(extendsValue)) {
-        // Recursively merge objects
-        result[key] = mergeConfig(baseValue, extendsValue);
-      } else {
-        // Override with extends value
-        result[key] = extendsValue;
-      }
-    }
-  }
-
-  return result;
+  // Simple merge - webpack will handle deep merging of resolve, module, etc.
+  return {
+    ...baseConfig,
+    ...extendsConfig,
+    resolve: {
+      ...baseConfig.resolve,
+      ...extendsConfig.resolve,
+      alias: {
+        ...baseConfig.resolve.alias,
+        ...(extendsConfig.resolve?.alias || {}),
+      },
+    },
+    module: {
+      ...baseConfig.module,
+      ...extendsConfig.module,
+      rules: [
+        ...baseConfig.module.rules,
+        ...(extendsConfig.module?.rules || []),
+      ],
+    },
+    externals: {
+      ...baseConfig.externals,
+      ...(extendsConfig.externals || {}),
+    },
+  };
 }
 
 module.exports = {
   getCommonBaseDir,
   createBaseWebpackConfig,
-  mergeConfig,
 };
-
