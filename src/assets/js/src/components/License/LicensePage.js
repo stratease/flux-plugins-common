@@ -22,10 +22,9 @@ import {
 import { CheckCircle, Error as ErrorIcon, Refresh, AutoAwesome, Settings, Cloud, Star, Visibility, VisibilityOff, ContentCopy, Check } from '@mui/icons-material';
 import { __ } from '@wordpress/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { useLicense, useActivateLicense, useValidateLicense, useAccountId } from '../../hooks/useLicense';
 import { PageLayout } from '../PageLayout';
+import { FluxAppProvider } from '../FluxAppProvider';
 import copy from 'clipboard-copy';
 
 // Create a client for this page
@@ -35,13 +34,6 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
     },
-  },
-});
-
-// Simple theme for license page
-const theme = createTheme({
-  palette: {
-    mode: 'light',
   },
 });
 
@@ -440,10 +432,9 @@ const LicensePageContent = () => {
 const LicensePage = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      <FluxAppProvider>
         <LicensePageContent />
-      </ThemeProvider>
+      </FluxAppProvider>
     </QueryClientProvider>
   );
 };
