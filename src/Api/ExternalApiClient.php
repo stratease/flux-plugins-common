@@ -13,6 +13,7 @@ namespace FluxPlugins\Common\Api;
 
 use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Compatibility\CompatibilityResponse;
+use FluxPlugins\Common\Logger\Logger;
 use FluxPlugins\Common\Services\CompatibilityService;
 
 /**
