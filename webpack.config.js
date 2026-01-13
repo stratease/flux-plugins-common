@@ -15,6 +15,7 @@ module.exports = createBaseWebpackConfig({
     entry: {
       'compatibility-dismiss': './src/assets/js/src/admin/compatibility-dismiss.js',
       'license-page': './src/assets/js/src/admin/license-page.js',
+      'logs-page': './src/assets/js/src/admin/logs-page.js',
     },
     output: {
       path: path.resolve(__dirname, 'src/assets/js/dist'),

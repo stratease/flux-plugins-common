@@ -333,6 +333,10 @@ class MenuService {
 		// Hook into admin_menu to register the logs page.
 		// Use method reference instead of closure to ensure $this is available.
 		add_action( 'admin_menu', [ $this, 'do_register_logs_page' ], self::MENU_PRIORITY + 1 );
+
+		// Hook into admin_enqueue_scripts to enqueue logs page scripts.
+		// This must be separate from page registration to ensure scripts are enqueued at the right time.
+		$this->enqueue_logs_page_scripts();
 	}
 
 	/**
@@ -854,13 +858,98 @@ class MenuService {
 	/**
 	 * Render logs page.
 	 *
+	 * Renders the React Logs page component.
+	 * Scripts are enqueued via admin_enqueue_scripts hook when page is registered.
+	 *
 	 * @since 1.0.0
 	 * @return void
 	 */
 	public function render_logs_page() {
-		// TODO: Render React LogsPage component.
-		// For now, placeholder.
-		echo '<div class="wrap"><h1>' . esc_html__( 'Logs', I18n::domain() ) . '</h1></div>';
+		// Render the React app container
+		// Scripts are enqueued automatically via admin_enqueue_scripts hook
+		?>
+		<div class="wrap">
+			<div id="flux-plugins-common-logs-app"></div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Enqueue logs page scripts.
+	 *
+	 * Enqueues scripts only once, shared across all plugins.
+	 * Uses WordPress action hooks to track enqueue state per request.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	private function enqueue_logs_page_scripts() {
+		// Ensure scripts are enqueued only once (shared across all plugins).
+		if ( did_action( 'flux_suite/menu_service/enqueue_logs_scripts' ) ) {
+			return;
+		}
+
+		/**
+		 * Fires when logs page scripts are being enqueued.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'flux_suite/menu_service/enqueue_logs_scripts' );
+
+		// Hook into admin_enqueue_scripts to enqueue logs page scripts.
+		add_action( 'admin_enqueue_scripts', [ $this, 'do_enqueue_logs_scripts' ], 10 );
+	}
+
+	/**
+	 * Enqueue logs page scripts callback.
+	 *
+	 * Called by WordPress admin_enqueue_scripts hook.
+	 * Only enqueues if the logs page is actually registered.
+	 *
+	 * @since 1.0.0
+	 * @param string $hook Current admin page hook.
+	 * @return void
+	 */
+	public function do_enqueue_logs_scripts( $hook ) {
+		// Only load on logs page.
+		if ( $hook !== 'flux-suite_page_' . self::LOGS_PAGE_SLUG ) {
+			return;
+		}
+
+		// Only enqueue if logs page is registered
+		if ( ! did_action( 'flux_suite/menu_service/register_logs_page' ) ) {
+			return;
+		}
+
+		// Get script URL from common library's own dist folder
+		$script_url = $this->get_common_library_asset_url( 'js/dist/logs-page.bundle.js' );
+		
+		if ( empty( $script_url ) ) {
+			return;
+		}
+
+		// Enqueue WordPress dependencies
+		wp_enqueue_script( 'wp-api-fetch' );
+		wp_enqueue_script( 'wp-element' );
+		wp_enqueue_script( 'wp-components' );
+		wp_enqueue_script( 'wp-i18n' );
+		wp_enqueue_style( 'wp-components' );
+
+		// Enqueue the logs page script
+		wp_enqueue_script(
+			'flux-plugins-common-logs-page',
+			$script_url,
+			[ 'wp-api-fetch', 'wp-element', 'wp-components', 'wp-i18n' ],
+			'1.0.0',
+			true
+		);
+
+		// Localize script with WordPress data
+		wp_localize_script( 'flux-plugins-common-logs-page', 'fluxPluginsCommon', [
+			'apiUrl' => rest_url( 'flux-plugins-common/v1/' ),
+			'nonce' => wp_create_nonce( 'wp_rest' ),
+			'adminUrl' => admin_url(),
+		] );
 	}
 
 	/**

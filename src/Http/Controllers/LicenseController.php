@@ -44,9 +44,9 @@ class LicenseController {
 	 * Constructor.
 	 *
 	 * @since 1.0.0
-	 * @param \Psr\Log\LoggerInterface|null $logger Optional logger instance.
+	 * @param \Psr\Log\LoggerInterface $logger Logger instance (required).
 	 */
-	public function __construct( $logger = null ) {
+	public function __construct( \Psr\Log\LoggerInterface $logger ) {
 		$this->logger = $logger;
 		$this->license_service = LicenseService::get_instance();
 	}

@@ -54,7 +54,7 @@ class ExternalApiClient {
 	 * Constructor.
 	 *
 	 * @since 1.0.0
-	 * @param \Psr\Log\LoggerInterface $logger   Logger instance.
+	 * @param \Psr\Log\LoggerInterface $logger   Logger instance (required).
 	 * @param string|null              $base_url Optional external service base URL. If not provided,
 	 *                                           will check FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL constant,
 	 *                                           or fallback to default 'https://api.fluxplugins.com'.
@@ -62,7 +62,7 @@ class ExternalApiClient {
 	 *                                           will check FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT constant,
 	 *                                           or fallback to default 15.
 	 */
-	public function __construct( $logger, $base_url = null, $timeout = null ) {
+	public function __construct( \Psr\Log\LoggerInterface $logger, $base_url = null, $timeout = null ) {
 		$this->logger = $logger;
 
 		// Initialize base URL: use provided value, or check constant, or use default.
@@ -84,6 +84,7 @@ class ExternalApiClient {
 		}
 	}
 
+
 	/**
 	 * Activate license key with external service.
 	 *
@@ -102,9 +103,7 @@ class ExternalApiClient {
 	public function activate_license( $license_key, $plugin_version = '' ) {
 		// Check compatibility before making API request.
 		if ( ! $this->check_compatibility_before_request() ) {
-			if ( $this->logger !== null ) {
-				$this->logger->warning( 'License activation blocked: Compatibility check indicates operations are disabled' );
-			}
+			$this->logger->warning( 'License activation blocked: Compatibility check indicates operations are disabled' );
 			return [
 				'success' => false,
 				'error'   => 'compatibility_check_failed',
@@ -175,9 +174,7 @@ class ExternalApiClient {
 	public function validate_license( $license_key ) {
 		// Check compatibility before making API request.
 		if ( ! $this->check_compatibility_before_request() ) {
-			if ( $this->logger !== null ) {
-				$this->logger->warning( 'License validation blocked: Compatibility check indicates operations are disabled' );
-			}
+			$this->logger->warning( 'License validation blocked: Compatibility check indicates operations are disabled' );
 			return [
 				'success'     => false,
 				'error'       => 'compatibility_check_failed',
@@ -447,7 +444,7 @@ class ExternalApiClient {
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
 			$log_level     = ( $operation === 'activation' ) ? 'error' : 'debug';
-			$this->logger->$log_level( "License {$operation} network error: {$error_message}" );
+			$this->logger->log( $log_level, "License {$operation} network error: {$error_message}" );
 			return [
 				'success'     => false,
 				'error'       => 'network_error',

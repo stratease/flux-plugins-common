@@ -375,9 +375,65 @@ class Plugin {
 }
 ```
 
-**Important:** REST API routes from the common library (License, Account ID) are automatically registered by `FluxPlugins::init()`. You only need to register your plugin-specific routes.
+**Important:** REST API routes from the common library (License, Account ID, Logs) are automatically registered by `FluxPlugins::init()`. You only need to register your plugin-specific routes.
 
-#### 4. Enqueue Admin Scripts
+#### 4. Using the Logger Service
+
+The Logger service is automatically initialized by `FluxPlugins::init()` with your plugin slug. You can access it anywhere in your plugin:
+
+```php
+use YourPlugin\FluxPlugins\Common\Logger\Logger;
+
+class Plugin {
+    private $logger;
+    
+    public function init() {
+        // Get logger instance (uses plugin slug set during FluxPlugins::init())
+        $this->logger = Logger::get_instance();
+        
+        // Use logger in your code
+        $this->logger->debug( 'Plugin initialized' );
+        $this->logger->info( 'Processing started', [ 'item_id' => 123 ] );
+        $this->logger->warning( 'Deprecated feature used' );
+        $this->logger->error( 'Operation failed', [ 'error_code' => 'E001' ] );
+    }
+}
+```
+
+**Important:** The Logger is initialized early in `FluxPlugins::init()`, so it's available immediately after calling `FluxPlugins::init()`. The plugin slug is automatically set from the `$plugin_slug` parameter you pass to `FluxPlugins::init()`, so all log entries will be tagged with your plugin's slug.
+
+**Available Methods:**
+- `Logger::get_instance()` - Get the singleton logger instance
+- `$logger->debug( $message, $context = [] )` - Log debug messages
+- `$logger->info( $message, $context = [] )` - Log informational messages
+- `$logger->warning( $message, $context = [] )` - Log warnings
+- `$logger->error( $message, $context = [] )` - Log errors
+- `$logger->critical( $message, $context = [] )` - Log critical errors
+- `$logger->alert( $message, $context = [] )` - Log alerts
+- `$logger->emergency( $message, $context = [] )` - Log emergencies
+- `$logger->log( $level, $message, $context = [] )` - Log with custom level
+
+**Registering the Logs Page:**
+
+To make logs viewable in the WordPress admin, register the logs page:
+
+```php
+use YourPlugin\FluxPlugins\Common\Services\MenuService;
+
+class Plugin {
+    public function register_menu_pages() {
+        $menu_service = MenuService::get_instance();
+        
+        // Register License page (optional)
+        $menu_service->register_license_page();
+        
+        // Register Logs page (optional - shows logs from all Flux Plugins)
+        $menu_service->register_logs_page();
+    }
+}
+```
+
+#### 5. Enqueue Admin Scripts
 
 Enqueue your React app and localize script data:
 

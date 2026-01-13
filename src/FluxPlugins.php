@@ -13,6 +13,7 @@ use FluxPlugins\Common\Services\MenuService;
 use FluxPlugins\Common\Services\CompatibilityService;
 use FluxPlugins\Common\Services\I18n;
 use FluxPlugins\Common\Services\RestApiService;
+use FluxPlugins\Common\Logger\Logger;
 
 
 /**
@@ -96,6 +97,9 @@ class FluxPlugins {
 		// Set text domain for internationalization service.
 		I18n::set_domain( $text_domain );
 
+		// Initialize Logger early with plugin slug so other services can reference it.
+		Logger::init( $plugin_slug );
+
 		// Hook into WordPress 'init' action for general initialization (account ID, etc.).
 		add_action( 'init', [ $instance, 'do_init' ], 10 );
 
@@ -135,8 +139,7 @@ class FluxPlugins {
 		$compatibility_service = CompatibilityService::get_instance();
 		$compatibility_service->init_plugin( $this->plugin_slug, $this->plugin_version );
 		
-		// TODO: Initialize Logger with plugin slug when Logger service is available.
-		// Logger::get_instance()->init( $this->plugin_slug );
+		// Logger is already initialized in init() method above.
 	}
 
 	/**

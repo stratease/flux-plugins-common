@@ -200,58 +200,7 @@ const LicensePageContent = () => {
   };
 
   return (
-    <PageLayout title={__('License', 'flux-plugins-common')}>
-      {/* Account ID Section - At the top for technical support reference */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          {__('Account ID', 'flux-plugins-common')}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-          {__('Your account ID is used for technical support. Please provide this when contacting support.', 'flux-plugins-common')}
-        </Typography>
-        <TextField
-          fullWidth
-          value={accountIdLoading ? __('Loading...', 'flux-plugins-common') : accountId}
-          disabled
-          type={showAccountId ? 'text' : 'password'}
-          variant="outlined"
-          size="small"
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Stack direction="row" spacing={0.5} alignItems="center">
-                  <Tooltip title={showAccountId ? __('Hide Account ID', 'flux-plugins-common') : __('Show Account ID', 'flux-plugins-common')}>
-                    <IconButton
-                      size="small"
-                      onClick={() => setShowAccountId(!showAccountId)}
-                      edge="end"
-                      sx={{ ml: 0.5 }}
-                    >
-                      {showAccountId ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={copiedAccountId ? __('Copied!', 'flux-plugins-common') : __('Copy Account ID', 'flux-plugins-common')}>
-                    <IconButton
-                      size="small"
-                      onClick={handleCopyAccountId}
-                      disabled={!accountId || accountIdLoading}
-                      edge="end"
-                    >
-                      {copiedAccountId ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            '& .MuiInputBase-input': {
-              fontFamily: 'monospace',
-              fontSize: '0.875rem',
-            },
-          }}
-        />
-      </Box>
+    <PageLayout title={__('Flux Suite - License', 'flux-plugins-common')}>
       {licenseKey && licenseData?.license_is_valid ? (
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
             {__('Your license provides access to download and use all plugins in the Flux Suite.', 'flux-plugins-common')}{' '}
@@ -279,10 +228,10 @@ const LicensePageContent = () => {
               }}
             >
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
+                <Typography variant="h6" component="h2" gutterBottom sx={{ mb: 2, fontWeight: 600, color: 'white' }}>
                   {__('Unlock Premium Features', 'flux-plugins-common')}
                 </Typography>
-                <Typography variant="body2" sx={{ mb: 2, opacity: 0.95 }}>
+                <Typography variant="body2" sx={{ mb: 2, opacity: 0.95, color: 'white' }}>
                   {__('A Flux Plugins license gives you access to:', 'flux-plugins-common')}
                 </Typography>
                 <List dense sx={{ mb: 2 }}>
@@ -292,7 +241,7 @@ const LicensePageContent = () => {
                     </ListItemIcon>
                     <ListItemText 
                       primary={__('AI-Powered Features', 'flux-plugins-common')}
-                      primaryTypographyProps={{ variant: 'body2' }}
+                      primaryTypographyProps={{ variant: 'body2', sx: { color: 'white' } }}
                     />
                   </ListItem>
                   <ListItem disableGutters sx={{ py: 0.5 }}>
@@ -301,7 +250,7 @@ const LicensePageContent = () => {
                     </ListItemIcon>
                     <ListItemText 
                       primary={__('Advanced Automation', 'flux-plugins-common')}
-                      primaryTypographyProps={{ variant: 'body2' }}
+                      primaryTypographyProps={{ variant: 'body2', sx: { color: 'white' } }}
                     />
                   </ListItem>
                   <ListItem disableGutters sx={{ py: 0.5 }}>
@@ -310,7 +259,7 @@ const LicensePageContent = () => {
                     </ListItemIcon>
                     <ListItemText 
                       primary={__('CDN Integration', 'flux-plugins-common')}
-                      primaryTypographyProps={{ variant: 'body2' }}
+                      primaryTypographyProps={{ variant: 'body2', sx: { color: 'white' } }}
                     />
                   </ListItem>
                   <ListItem disableGutters sx={{ py: 0.5 }}>
@@ -319,7 +268,7 @@ const LicensePageContent = () => {
                     </ListItemIcon>
                     <ListItemText 
                       primary={__('Premium Features Across All Flux Suite Plugins', 'flux-plugins-common')}
-                      primaryTypographyProps={{ variant: 'body2' }}
+                      primaryTypographyProps={{ variant: 'body2', sx: { color: 'white' } }}
                     />
                   </ListItem>
                 </List>
@@ -421,6 +370,58 @@ const LicensePageContent = () => {
             </Stack>
           </Grid>
         </Grid>
+
+      {/* Account ID Section - At the bottom for technical support reference */}
+      <Box sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: 'divider' }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {__('Account ID', 'flux-plugins-common')}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+          {__('Your account ID is used for technical support. Please provide this when contacting support.', 'flux-plugins-common')}
+        </Typography>
+        <TextField
+          value={accountIdLoading ? __('Loading...', 'flux-plugins-common') : accountId}
+          disabled
+          type={showAccountId ? 'text' : 'password'}
+          variant="outlined"
+          size="small"
+          sx={{
+            maxWidth: 500,
+            '& .MuiInputBase-input': {
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+            },
+          }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <Tooltip title={showAccountId ? __('Hide Account ID', 'flux-plugins-common') : __('Show Account ID', 'flux-plugins-common')}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowAccountId(!showAccountId)}
+                      edge="end"
+                      sx={{ ml: 0.5 }}
+                    >
+                      {showAccountId ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={copiedAccountId ? __('Copied!', 'flux-plugins-common') : __('Copy Account ID', 'flux-plugins-common')}>
+                    <IconButton
+                      size="small"
+                      onClick={handleCopyAccountId}
+                      disabled={!accountId || accountIdLoading}
+                      edge="end"
+                    >
+                      {copiedAccountId ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
     </PageLayout>
   );
 };

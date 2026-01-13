@@ -31,8 +31,8 @@ const PageLayout = ({ title, children, maxWidth = 'lg', ...props }) => {
             borderColor: 'divider',
           }}
         >
-          <BrandIcon size={40} sx={{ mr: 2 }} />
-          <Typography variant="h4" component="h1" sx={{ m: 0, lineHeight: 1 }}>
+          <BrandIcon size={28} sx={{ mr: 2 }} />
+          <Typography variant="h4" component="h1" sx={{ m: 0, p: 0, lineHeight: 1 }}>
             {title}
           </Typography>
         </Box>

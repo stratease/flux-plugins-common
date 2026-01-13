@@ -9,6 +9,8 @@
 namespace FluxPlugins\Common\Services;
 
 use FluxPlugins\Common\Http\Controllers\LicenseController;
+use FluxPlugins\Common\Http\Controllers\LogsController;
+use FluxPlugins\Common\Logger\Logger;
 
 /**
  * REST API service.
@@ -118,9 +120,16 @@ class RestApiService {
 			return;
 		}
 
+		// Get logger instance (uses plugin slug set during FluxPlugins::init()).
+		$logger = Logger::get_instance();
+
 		// Register License controller routes.
-		$license_controller = new LicenseController( $this->logger );
+		$license_controller = new LicenseController( $logger );
 		$license_controller->register_routes();
+
+		// Register Logs controller routes.
+		$logs_controller = new LogsController( $logger );
+		$logs_controller->register_routes();
 
 		/**
 		 * Fires when REST API routes are actually registered.
