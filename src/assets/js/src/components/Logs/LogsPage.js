@@ -29,9 +29,11 @@ import {
   Search,
 } from '@mui/icons-material';
 import { __ } from '@wordpress/i18n';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { logsApiService } from '../../services/logsApi';
 import { PageLayout } from '../PageLayout';
+import { FluxAppProvider } from '../FluxAppProvider';
 
 /**
  * Logs page component with pagination and filtering
@@ -370,5 +372,29 @@ const LogsPageContent = () => {
   );
 };
 
-export default LogsPageContent;
+// Create a client for this page
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+/**
+ * Logs page with providers
+ * This is the entry point that sets up React Query and Material-UI
+ */
+const LogsPage = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <FluxAppProvider>
+        <LogsPageContent />
+      </FluxAppProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default LogsPage;
 
