@@ -8,6 +8,7 @@
 
 namespace FluxPlugins\Common\Http\Controllers;
 
+use FluxPlugins\Common\Logger\Logger;
 use FluxPlugins\Common\Services\LogsService;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -25,7 +26,7 @@ class LogsController {
 	 * Logger instance.
 	 *
 	 * @since 1.0.0
-	 * @var \Psr\Log\LoggerInterface
+	 * @var Logger
 	 */
 	private $logger;
 
@@ -41,9 +42,9 @@ class LogsController {
 	 * Constructor.
 	 *
 	 * @since 1.0.0
-	 * @param \Psr\Log\LoggerInterface $logger Logger instance (required).
+	 * @param Logger $logger Logger instance (required).
 	 */
-	public function __construct( \Psr\Log\LoggerInterface $logger ) {
+	public function __construct( Logger $logger ) {
 		if ( ! $logger ) {
 			throw new \InvalidArgumentException( 'Logger instance is required' );
 		}

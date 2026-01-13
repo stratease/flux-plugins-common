@@ -12,6 +12,7 @@
 namespace FluxPlugins\Common\Compatibility;
 
 use FluxPlugins\Common\Api\ExternalApiClient;
+use FluxPlugins\Common\Logger\Logger;
 
 /**
  * Compatibility validator class.
@@ -32,7 +33,7 @@ class CompatibilityValidator {
 	 * Logger instance.
 	 *
 	 * @since 1.0.0
-	 * @var \Psr\Log\LoggerInterface
+	 * @var Logger
 	 */
 	private $logger;
 
@@ -80,12 +81,12 @@ class CompatibilityValidator {
 	 * Constructor.
 	 *
 	 * @since 1.0.0
-	 * @param \Psr\Log\LoggerInterface $logger          Logger instance.
+	 * @param Logger          $logger          Logger instance.
 	 * @param ExternalApiClient         $api_client      External API client instance.
 	 * @param string                   $plugin_identifier Plugin identifier (e.g., 'flux-media-optimizer').
 	 * @param string                   $plugin_version   Plugin version.
 	 */
-	public function __construct( $logger, $api_client, $plugin_identifier, $plugin_version ) {
+	public function __construct( Logger $logger, $api_client, $plugin_identifier, $plugin_version ) {
 		$this->logger            = $logger;
 		$this->api_client        = $api_client;
 		$this->plugin_identifier = $plugin_identifier;

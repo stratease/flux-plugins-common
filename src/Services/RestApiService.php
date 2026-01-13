@@ -52,7 +52,7 @@ class RestApiService {
 	 * Logger instance.
 	 *
 	 * @since 1.0.0
-	 * @var \Psr\Log\LoggerInterface|null
+	 * @var Logger|null
 	 */
 	private $logger;
 
@@ -73,7 +73,7 @@ class RestApiService {
 	 * Constructor.
 	 *
 	 * @since 1.0.0
-	 * @param \Psr\Log\LoggerInterface|null $logger Optional logger instance.
+	 * @param Logger|null $logger Optional logger instance.
 	 */
 	private function __construct( $logger = null ) {
 		$this->logger = $logger;
