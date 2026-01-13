@@ -11,6 +11,7 @@ namespace FluxPlugins\Common\Http\Controllers;
 use FluxPlugins\Common\License\LicenseService;
 use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Api\ExternalApiClient;
+use FluxPlugins\Common\Logger\Logger;
 use WP_REST_Request;
 use WP_REST_Response;
 

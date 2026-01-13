@@ -27,16 +27,21 @@ const queryClient = new QueryClient({
 // Initialize React app when DOM is ready
 (function() {
   function initLogsApp() {
+    console.log('Flux Plugins Common: Initializing logs app...');
     const container = document.getElementById('flux-plugins-common-logs-app');
     
     if (!container) {
-      console.error('Flux Plugins Common: Logs app container not found');
+      console.error('Flux Plugins Common: Logs app container not found. Available IDs:', 
+        Array.from(document.querySelectorAll('[id]')).map(el => el.id).join(', '));
       return;
     }
+
+    console.log('Flux Plugins Common: Container found, creating React root...');
 
     // Create React root and render Logs page
     try {
       const root = createRoot(container);
+      console.log('Flux Plugins Common: React root created, rendering LogsPage...');
       root.render(
         React.createElement(QueryClientProvider, { client: queryClient },
           React.createElement(FluxAppProvider,
@@ -44,9 +49,10 @@ const queryClient = new QueryClient({
           )
         )
       );
+      console.log('Flux Plugins Common: LogsPage rendered successfully');
     } catch (error) {
       console.error('Flux Plugins Common: Failed to render Logs page', error);
-      container.innerHTML = '<div class="notice notice-error"><p>Failed to load logs page. Please ensure all dependencies are loaded.</p></div>';
+      container.innerHTML = '<div class="notice notice-error"><p>Failed to load logs page: ' + error.message + '</p></div>';
     }
   }
 

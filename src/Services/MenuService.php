@@ -912,7 +912,12 @@ class MenuService {
 	 */
 	public function do_enqueue_logs_scripts( $hook ) {
 		// Only load on logs page.
-		if ( $hook !== 'flux-suite_page_' . self::LOGS_PAGE_SLUG ) {
+		$expected_hook = 'flux-suite_page_' . self::LOGS_PAGE_SLUG;
+		if ( $hook !== $expected_hook ) {
+			// Debug: log the actual hook for troubleshooting
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( sprintf( 'Flux Plugins Common: Logs page hook mismatch. Expected: %s, Got: %s', $expected_hook, $hook ) );
+			}
 			return;
 		}
 
