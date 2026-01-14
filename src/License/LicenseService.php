@@ -165,5 +165,116 @@ class LicenseService {
 			'license_is_valid' => $this->is_license_valid(),
 		];
 	}
+
+	/**
+	 * Transient name for license invalid notice.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const TRANSIENT_NAME_LICENSE_INVALID_NOTICE = 'flux-plugins_license_invalid_notice';
+
+	/**
+	 * Transient expiration time (24 hours).
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const TRANSIENT_EXPIRATION = DAY_IN_SECONDS;
+
+	/**
+	 * Check license validity and update notice transient.
+	 *
+	 * Checks if license is valid and manages the transient that controls
+	 * whether the admin notice should be displayed.
+	 *
+	 * - If license is invalid and a key exists: Set transient to show notice
+	 * - If license is valid: Clear transient to hide notice
+	 *
+	 * @since 1.0.0
+	 * @return bool True if license is valid, false otherwise.
+	 */
+	public function check_validity_and_update_notice() {
+		$license_key = $this->get_license_key();
+		$is_valid = $this->is_license_valid();
+
+		// If no license key, no notice needed
+		if ( empty( $license_key ) ) {
+			$this->clear_invalid_notice_transient();
+			return false;
+		}
+
+		// Update transient based on validity
+		if ( $is_valid ) {
+			// License is valid - clear the notice transient
+			$this->clear_invalid_notice_transient();
+		} else {
+			// License is invalid - set transient to show notice
+			$this->set_invalid_notice_transient();
+		}
+
+		return $is_valid;
+	}
+
+	/**
+	 * Set transient to indicate license invalid notice should be shown.
+	 *
+	 * @since 1.0.0
+	 * @return bool True on success, false on failure.
+	 */
+	private function set_invalid_notice_transient() {
+		return set_site_transient( self::TRANSIENT_NAME_LICENSE_INVALID_NOTICE, true, self::TRANSIENT_EXPIRATION );
+	}
+
+	/**
+	 * Clear transient to hide license invalid notice.
+	 *
+	 * @since 1.0.0
+	 * @return bool True on success, false on failure.
+	 */
+	private function clear_invalid_notice_transient() {
+		return delete_site_transient( self::TRANSIENT_NAME_LICENSE_INVALID_NOTICE );
+	}
+
+	/**
+	 * Update notice transient based on API validation result.
+	 *
+	 * This method is called by ExternalApiClient after license validation/activation
+	 * to update the notice transient based on the API result, independent of
+	 * the current license_last_valid_date state.
+	 *
+	 * @since 1.0.0
+	 * @param bool $is_valid Whether the license is valid according to the API result.
+	 * @return void
+	 */
+	public function update_notice_transient_from_api_result( $is_valid ) {
+		// Only update if a license key exists.
+		$license_key = $this->get_license_key();
+		if ( empty( $license_key ) ) {
+			$this->clear_invalid_notice_transient();
+			return;
+		}
+
+		// Update transient based on API result.
+		if ( $is_valid ) {
+			$this->clear_invalid_notice_transient();
+		} else {
+			$this->set_invalid_notice_transient();
+		}
+	}
+
+	/**
+	 * Check if license invalid notice should be displayed.
+	 *
+	 * @since 1.0.0
+	 * @return bool True if notice should be shown, false otherwise.
+	 */
+	public function should_show_invalid_notice() {
+		// Only show if transient exists and license key exists
+		$has_transient = get_site_transient( self::TRANSIENT_NAME_LICENSE_INVALID_NOTICE ) !== false;
+		$has_license_key = ! empty( $this->get_license_key() );
+
+		return $has_transient && $has_license_key;
+	}
 }
 

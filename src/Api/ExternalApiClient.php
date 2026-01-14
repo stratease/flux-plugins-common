@@ -14,6 +14,7 @@ namespace FluxPlugins\Common\Api;
 use FluxPlugins\Common\Account\AccountIdService;
 use FluxPlugins\Common\Compatibility\CompatibilityResponse;
 use FluxPlugins\Common\Logger\Logger;
+use FluxPlugins\Common\License\LicenseService;
 use FluxPlugins\Common\Services\CompatibilityService;
 
 /**
@@ -105,22 +106,28 @@ class ExternalApiClient {
 		// Check compatibility before making API request.
 		if ( ! $this->check_compatibility_before_request() ) {
 			$this->logger->warning( 'License activation blocked: Compatibility check indicates operations are disabled' );
-			return [
+			$result = [
 				'success' => false,
 				'error'   => 'compatibility_check_failed',
 				'message' => 'Compatibility check failed. Please update the plugin or check compatibility status.',
 			];
+			// Update notice transient for failed activation.
+			$this->update_license_notice_transient( $result );
+			return $result;
 		}
 
 		$account_id = AccountIdService::get_instance()->get_account_id();
 
 		if ( empty( $account_id ) ) {
 			$this->logger->error( 'License activation failed: Account ID not found' );
-			return [
+			$result = [
 				'success' => false,
 				'error'   => 'account_id_required',
 				'message' => 'Account ID not found',
 			];
+			// Update notice transient for failed activation.
+			$this->update_license_notice_transient( $result );
+			return $result;
 		}
 
 		// Get website domain - use full URL as the endpoint expects a URL format.
@@ -156,7 +163,13 @@ class ExternalApiClient {
 			]
 		);
 
-		return $this->handle_license_response( $response, 'activation', $account_id );
+		$result = $this->handle_license_response( $response, 'activation', $account_id );
+
+		// Update license validation notice transient based on result.
+		// This is the single source of truth for license validation status.
+		$this->update_license_notice_transient( $result );
+
+		return $result;
 	}
 
 	/**
@@ -176,24 +189,30 @@ class ExternalApiClient {
 		// Check compatibility before making API request.
 		if ( ! $this->check_compatibility_before_request() ) {
 			$this->logger->warning( 'License validation blocked: Compatibility check indicates operations are disabled' );
-			return [
+			$result = [
 				'success'     => false,
 				'error'       => 'compatibility_check_failed',
 				'message'     => 'Compatibility check failed. Please update the plugin or check compatibility status.',
 				'status_code' => null,
 			];
+			// Update notice transient for failed validation.
+			$this->update_license_notice_transient( $result );
+			return $result;
 		}
 
 		$account_id = AccountIdService::get_instance()->get_account_id();
 
 		if ( empty( $account_id ) ) {
 			$this->logger->error( 'License validation failed: Account ID not found' );
-			return [
+			$result = [
 				'success'     => false,
 				'error'       => 'account_id_required',
 				'message'     => 'Account ID not found',
 				'status_code' => null,
 			];
+			// Update notice transient for failed validation.
+			$this->update_license_notice_transient( $result );
+			return $result;
 		}
 
 		// Get website domain - use full URL as the endpoint expects a URL format.
@@ -224,7 +243,13 @@ class ExternalApiClient {
 			]
 		);
 
-		return $this->handle_license_response( $response, 'validation', $account_id );
+		$result = $this->handle_license_response( $response, 'validation', $account_id );
+
+		// Update license validation notice transient based on result.
+		// This is the single source of truth for license validation status.
+		$this->update_license_notice_transient( $result );
+
+		return $result;
 	}
 
 	/**
@@ -637,6 +662,37 @@ class ExternalApiClient {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Update license validation notice transient based on API result.
+	 *
+	 * This method is called after license validation or activation API calls
+	 * to update the transient that controls whether the admin notice should be displayed.
+	 *
+	 * - If license is valid (success=true and valid=true): Clear transient to hide notice
+	 * - If license is invalid (any failure or valid=false): Set transient to show notice
+	 *
+	 * This is the single source of truth for license validation status from API calls.
+	 *
+	 * @since 1.0.0
+	 * @param array $result API response result array with 'success' and optionally 'valid' keys.
+	 * @return void
+	 */
+	private function update_license_notice_transient( $result ) {
+		$license_service = LicenseService::get_instance();
+
+		// Determine if license is valid based on API result.
+		$is_valid = false;
+		if ( isset( $result['success'] ) && $result['success'] === true ) {
+			// For validation, check 'valid' key. For activation, success means valid.
+			$is_valid = isset( $result['valid'] ) ? (bool) $result['valid'] : true;
+		}
+
+		// Update notice transient based on API result.
+		// This updates the transient directly based on the API result, independent
+		// of the current license_last_valid_date state (which may be updated by the controller).
+		$license_service->update_notice_transient_from_api_result( $is_valid );
 	}
 }
 

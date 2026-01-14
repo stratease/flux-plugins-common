@@ -146,6 +146,7 @@ class LicenseController {
 			if ( ! $activation_result['success'] ) {
 				// Clear validation date on failure
 				$this->license_service->set_license_last_valid_date( null );
+				
 				$is_debug = defined( 'WP_DEBUG' ) && WP_DEBUG;
 				
 				$error_code = $activation_result['error'] ?? 'unknown_error';

@@ -14,6 +14,7 @@ use FluxPlugins\Common\Services\CompatibilityService;
 use FluxPlugins\Common\Services\I18n;
 use FluxPlugins\Common\Services\RestApiService;
 use FluxPlugins\Common\Logger\Logger;
+use FluxPlugins\Common\License\LicenseService;
 
 
 /**
@@ -149,6 +150,7 @@ class FluxPlugins {
 	 * - Registers top-level "Flux Suite" menu (via MenuService)
 	 * - Registers License page (via MenuService)
 	 * - Registers Logs page (via MenuService)
+	 * - Registers license validation notice handler
 	 *
 	 * This method only runs in admin context, not in WP-CLI or frontend.
 	 * This method is idempotent and can be called multiple times safely.
@@ -159,7 +161,59 @@ class FluxPlugins {
 	 * @return void
 	 */
 	public function do_admin_init() {
-		// TODO any admin only code here.		
+		// Register license validation notice handler (only once per request).
+		if ( ! did_action( 'flux_suite/license_service/register_notice_handler' ) ) {
+			/**
+			 * Fires when the license notice handler hook is registered.
+			 *
+			 * This action is fired once per request when the admin_notices hook is registered.
+			 *
+			 * @since 1.0.0
+			 */
+			do_action( 'flux_suite/license_service/register_notice_handler' );
+
+			// Hook into admin_notices to display license validation notice.
+			add_action( 'admin_notices', [ $this, 'display_license_validation_notice' ], 10 );
+		}
+	}
+
+	/**
+	 * Display admin notice for invalid license key.
+	 *
+	 * Checks if the license invalid notice transient exists and displays
+	 * a notice if the license is invalid.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function display_license_validation_notice() {
+		// Only show to users with manage_options capability.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$license_service = LicenseService::get_instance();
+
+		// Check if notice should be displayed.
+		if ( ! $license_service->should_show_invalid_notice() ) {
+			return;
+		}
+
+		// Get license page URL.
+		$license_url = admin_url( 'admin.php?page=flux-suite-license' );
+
+		// Build notice message.
+		$message = sprintf(
+			/* translators: %1$s: License page URL */
+			__( 'Your Flux Suite license is invalid or has expired. Please <a href="%1$s">validate your license</a> to enable external processing features.', I18n::domain() ),
+			esc_url( $license_url )
+		);
+
+		// Output notice.
+		printf(
+			'<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
+			wp_kses_post( $message )
+		);
 	}
 
 }
