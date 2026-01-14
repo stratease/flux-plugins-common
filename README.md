@@ -38,24 +38,44 @@ This approach leverages WordPress's built-in hook system as the shared service l
 
 ### Hook Naming Convention
 
-All hooks follow the WordPress standard pattern: `{plugin_namespace}/{class_name}/{method_name}` with an optional `/{operation}` suffix for more refined callbacks. This makes hooks traceable to the class and method that fires them.
+**All hooks MUST follow the WordPress standard pattern:** `{plugin_namespace}/{class_name}/{method_name}` with an optional `/{operation}` suffix for more refined callbacks. This makes hooks traceable to the class and method that fires them, improving code discoverability and maintainability.
 
-- **Plugin Namespace**: `flux_suite` - Identifies the Flux Plugins suite.
-- **Class Name**: `menu_service` - The class responsible for the hook.
-- **Method Name**: `register_top_level_menu` - The method within the class that fires the hook.
-- **Operation (Optional)**: `registered` - A specific operation within the method.
+**Pattern Structure:**
+- **Plugin Namespace**: The plugin's slug in snake_case (e.g., `flux_suite` for common library, `flux_ai_alt_creator` for AI Media Alt Creator plugin, `flux_media_optimizer` for Media Optimizer plugin).
+- **Class Name**: The class name in snake_case (e.g., `MenuService` → `menu_service`, `AltTextProvider` → `alt_text_provider`).
+- **Method Name**: The method name in snake_case (e.g., `generate_alt_text`, `register_routes`).
+- **Operation (Optional)**: A specific operation or state within the method (e.g., `before`, `after`, `batch_size`).
 
-**Menu Service Hooks:**
+**Examples:**
+
+**Common Library Hooks (flux_suite namespace):**
 - `flux_suite/menu_service/register_top_level_menu` - Fired when top-level menu is registered
 - `flux_suite/menu_service/register_license_page` - Fired when License page is registered
 - `flux_suite/menu_service/register_logs_page` - Fired when Logs page is registered
 - `flux_suite/menu_service/register_settings_page` - Fired when Settings page is registered
 - `flux_suite/menu_service/init_plugin_registry` - Fired when plugin registry is initialized
-
-**Compatibility Service Hooks:**
 - `flux_suite/compatibility_service/assets_enqueued` - Fired when compatibility assets are enqueued
 
-This convention ensures consistent, predictable hook names across all Flux Plugins and makes it easy to identify which component and resource a hook belongs to.
+**Plugin-Specific Hooks (plugin namespace):**
+- `flux_ai_alt_creator/alt_text_provider/process_attachment` - Action to process an attachment for alt text generation
+- `flux_ai_alt_creator/alt_text_api_service/generate_alt_text` - Filter to intercept alt text generation before default processing
+- `flux_ai_alt_creator/openai_service/generate_alt_text/before` - Fired before generating alt text via OpenAI
+- `flux_ai_alt_creator/openai_service/generate_alt_text/after` - Fired after generating alt text via OpenAI
+- `flux_ai_alt_creator/media_scanner/scan/before` - Fired before scanning for media files
+- `flux_ai_alt_creator/media_scanner/scan/after` - Fired after scanning for media files
+- `flux_ai_alt_creator/admin_controller/get_tabs` - Filter to register additional tabs on the admin page
+
+**Why This Convention Matters:**
+1. **Traceability**: When you see a hook name, you can immediately identify which class and method fires it
+2. **Consistency**: All Flux Plugins use the same naming pattern, making code easier to understand
+3. **Discoverability**: Developers can easily find where hooks are fired by searching for the hook name
+4. **Namespace Safety**: Plugin-specific hooks won't conflict with hooks from other plugins or the common library
+
+**Important Rules:**
+- **Always use snake_case** for all parts of the hook name (class names, method names, operations)
+- **Use descriptive operation suffixes** when filtering at specific points in a method (e.g., `/before`, `/after`, `/batch_size`)
+- **Never use old-style hook names** with underscores between plugin namespace and hook description (e.g., `flux_ai_alt_creator_generate_alt_text` ❌)
+- **Always convert class names to snake_case** (PascalCase → snake_case: `AltTextProvider` → `alt_text_provider`)
 
 ## Constants
 
