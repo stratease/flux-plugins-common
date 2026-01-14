@@ -216,7 +216,7 @@ const LicensePageContent = () => {
         ) : (
           <>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              {__('Enter your Flux Plugins license key to unlock premium features across all Flux Plugins.', 'flux-plugins-common')}
+              {__('Enter your Flux Suite license key to unlock premium features across all Flux Suite plugins.', 'flux-plugins-common')}
             </Typography>
             
             <Card 
@@ -232,7 +232,7 @@ const LicensePageContent = () => {
                   {__('Unlock Premium Features', 'flux-plugins-common')}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 2, opacity: 0.95, color: 'white' }}>
-                  {__('A Flux Plugins license gives you access to:', 'flux-plugins-common')}
+                  {__('A Flux Suite license gives you access to:', 'flux-plugins-common')}
                 </Typography>
                 <List dense sx={{ mb: 2 }}>
                   <ListItem disableGutters sx={{ py: 0.5 }}>
@@ -363,7 +363,7 @@ const LicensePageContent = () => {
               {licenseKey && licenseData?.license_is_valid && (
                 <Alert severity="success">
                   <Typography variant="body2">
-                    {__('Your license is active and valid. Premium features are enabled across all Flux Plugins.', 'flux-plugins-common')}
+                    {__('Your license is active and valid. Premium features are enabled across all Flux Suite plugins.', 'flux-plugins-common')}
                   </Typography>
                 </Alert>
               )}
@@ -377,7 +377,11 @@ const LicensePageContent = () => {
           {__('Account ID', 'flux-plugins-common')}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-          {__('Your account ID is used for technical support. Please provide this when contacting support.', 'flux-plugins-common')}
+          {__('Your account ID is used for technical support. Please provide this when', 'flux-plugins-common')}{' '}
+          <Link href="https://fluxplugins.com/contact-support/" target="_blank" rel="noopener noreferrer" sx={{ color: 'primary.main' }}>
+            {__('contacting support', 'flux-plugins-common')}
+          </Link>
+          .
         </Typography>
         <TextField
           value={accountIdLoading ? __('Loading...', 'flux-plugins-common') : accountId}

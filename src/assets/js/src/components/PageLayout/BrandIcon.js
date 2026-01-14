@@ -21,7 +21,7 @@ const BrandIcon = ({ size = 40, sx = {}, ...props }) => {
     <Box
       component="img"
       src={iconPath}
-      alt="Flux Plugins"
+      alt="Flux Suite"
       sx={{
         width: size,
         height: size,
