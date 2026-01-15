@@ -533,7 +533,7 @@ class MenuService {
 			__( 'Professional AI-powered alt text generation with automation and bulk processing. Requires Flux AI Media Alt Creator free plugin.', I18n::domain() ),
 			'flux-ai-media-alt-creator-pro/flux-ai-media-alt-creator-pro.php',
 			'admin.php?page=flux-ai-media-alt-creator',
-			'https://fluxplugins.com/pro-ai-media-alt-text-generator',
+			'https://fluxplugins.com/ai-media-alt-text-creator-pro',
 			'dashicons-admin-media'
 		);
 
@@ -925,10 +925,6 @@ class MenuService {
 		// Only load on logs page.
 		$expected_hook = 'flux-suite_page_' . self::LOGS_PAGE_SLUG;
 		if ( $hook !== $expected_hook ) {
-			// Debug: log the actual hook for troubleshooting
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( sprintf( 'Flux Plugins Common: Logs page hook mismatch. Expected: %s, Got: %s', $expected_hook, $hook ) );
-			}
 			return;
 		}
 

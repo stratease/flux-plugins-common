@@ -54,35 +54,48 @@ const theme = createTheme({
       'Arial',
       'sans-serif',
     ].join(','),
+    // @since 1.0.0 Use px values to prevent rem/em conflicts with WordPress admin styles
     h1: {
-      fontSize: '2.5rem',
+      fontSize: '40px', // 2.5rem
       fontWeight: 600,
       lineHeight: 1.2,
     },
     h2: {
-      fontSize: '2rem',
+      fontSize: '32px', // 2rem
       fontWeight: 600,
       lineHeight: 1.3,
     },
     h3: {
-      fontSize: '1.75rem',
+      fontSize: '28px', // 1.75rem
       fontWeight: 600,
       lineHeight: 1.3,
     },
     h4: {
-      fontSize: '1.5rem',
+      fontSize: '24px', // 1.5rem
       fontWeight: 600,
       lineHeight: 1.4,
     },
     h5: {
-      fontSize: '1.25rem',
+      fontSize: '20px', // 1.25rem
       fontWeight: 600,
       lineHeight: 1.4,
     },
     h6: {
-      fontSize: '1rem',
+      fontSize: '16px', // 1rem
       fontWeight: 600,
       lineHeight: 1.5,
+    },
+    body1: {
+      fontSize: '16px', // 1rem
+      lineHeight: 1.5,
+    },
+    body2: {
+      fontSize: '14px', // 0.875rem
+      lineHeight: 1.43,
+    },
+    caption: {
+      fontSize: '12px', // 0.75rem
+      lineHeight: 1.66,
     },
   },
   components: {
@@ -112,6 +125,15 @@ const theme = createTheme({
           borderRadius: 6,
           textTransform: 'none',
           fontWeight: 500,
+          fontSize: '0.875rem',
+          lineHeight: 1.75,
+          letterSpacing: '0.02857em',
+          // Override WordPress button styles
+          border: 'none',
+          boxShadow: 'none',
+          '&.MuiButton-contained': {
+            boxShadow: '0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12)',
+          },
         },
       },
     },
@@ -139,6 +161,81 @@ const theme = createTheme({
           textTransform: 'none',
           fontWeight: 500,
           minHeight: 48,
+        },
+      },
+    },
+    // @since 1.0.0 Added to fix WordPress admin style conflicts
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          // Ensure typography uses theme defaults, not WordPress admin styles
+          fontSize: 'inherit',
+          lineHeight: 'inherit',
+          margin: 0,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        },
+      },
+    },
+    // @since 1.0.0 Added to fix WordPress admin style conflicts
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          fontSize: '16px', // Use px to avoid rem/em conflicts
+          // Reset WordPress form styles
+          '& input, & textarea': {
+            border: 'none',
+            background: 'transparent',
+            boxShadow: 'none',
+            outline: 'none',
+            fontSize: '16px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          },
+        },
+      },
+    },
+    // @since 1.0.0 Added to fix WordPress admin style conflicts
+    MuiInputBase: {
+      styleOverrides: {
+        root: {
+          fontSize: '16px', // Use px to avoid rem/em conflicts
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        },
+        input: {
+          fontSize: '16px', // Use px to avoid rem/em conflicts
+          lineHeight: 1.5,
+          padding: '16.5px 14px',
+          boxSizing: 'border-box',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          '&::placeholder': {
+            fontSize: '16px', // Use px to avoid rem/em conflicts
+            opacity: 0.42,
+            transition: 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms',
+          },
+          '&:focus::placeholder': {
+            opacity: 0,
+          },
+        },
+      },
+    },
+    // @since 1.0.0 Added to fix WordPress admin style conflicts
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4,
+        },
+        notchedOutline: {
+          borderWidth: '1px',
+          borderColor: 'rgba(0, 0, 0, 0.23)',
+        },
+      },
+    },
+    // @since 1.0.0 Added to fix WordPress admin style conflicts
+    MuiFormHelperText: {
+      styleOverrides: {
+        root: {
+          fontSize: '12px', // Use px to avoid rem/em conflicts
+          lineHeight: 1.66,
+          margin: '3px 14px 0 14px',
         },
       },
     },

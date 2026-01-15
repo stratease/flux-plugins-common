@@ -19,7 +19,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import { CheckCircle, Error as ErrorIcon, Refresh, AutoAwesome, Settings, Cloud, Star, Visibility, VisibilityOff, ContentCopy, Check } from '@mui/icons-material';
+import { CheckCircle, Error as ErrorIcon, Refresh, Star, Visibility, VisibilityOff, ContentCopy, Check, Divider } from '@mui/icons-material';
 import { __ } from '@wordpress/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useLicense, useActivateLicense, useValidateLicense, useAccountId } from '../../hooks/useLicense';
