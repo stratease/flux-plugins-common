@@ -129,18 +129,6 @@ const FluxAppProvider = ({ children }) => {
             box-shadow: none !important;
             outline: none !important;
           }
-          
-          /* Ensure MUI buttons are not affected by WordPress button styles */
-          .MuiButton-root,
-          .MuiIconButton-root {
-            border: none !important;
-            background: transparent !important;
-            box-shadow: none !important;
-          }
-          
-          .MuiButton-contained {
-            box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12) !important;
-          }
         `}
       />
       {children}
