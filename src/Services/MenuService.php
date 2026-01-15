@@ -651,7 +651,7 @@ class MenuService {
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Flux Suite', I18n::domain() ); ?></h1>
 			<p class="description">
-				<?php echo esc_html__( 'Manage your Flux Suite. Active plugins are shown at the bottom.', I18n::domain() ); ?>
+				<?php echo esc_html__( 'Manage your Flux Suite. Install any of the plugins from Flux Suite under one license - it is a great deal!', I18n::domain() ); ?>
 			</p>
 
 			<div class="flux-suite-plugins-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">

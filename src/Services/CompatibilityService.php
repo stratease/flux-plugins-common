@@ -11,6 +11,7 @@ namespace FluxPlugins\Common\Services;
 use FluxPlugins\Common\Api\ExternalApiClient;
 use FluxPlugins\Common\Compatibility\CompatibilityValidator;
 use FluxPlugins\Common\Compatibility\CompatibilityNoticeHandler;
+use FluxPlugins\Common\Logger\Logger;
 use FluxPlugins\Common\Services\I18n;
 
 /**
@@ -139,9 +140,8 @@ class CompatibilityService {
 			return;
 		}
 
-		// TODO: Initialize Logger with plugin slug when Logger service is available.
-		// For now, compatibility validation will work without logging.
-		$logger = null;
+		// Initialize Logger instance (already initialized with plugin slug in FluxPlugins::init()).
+		$logger = Logger::get_instance();
 
 		// Create shared external API client for compatibility checks.
 		// Shared API client will use constants internally (FLUX_PLUGINS_COMMON_*).
