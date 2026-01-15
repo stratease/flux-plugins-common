@@ -29,11 +29,13 @@ import {
   Search,
 } from '@mui/icons-material';
 import { __ } from '@wordpress/i18n';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { logsApiService } from '../../services/logsApi';
 import { PageLayout } from '../PageLayout';
 import { FluxAppProvider } from '../FluxAppProvider';
+import StyleShowcase from './StyleShowcase';
 
 /**
  * Logs page component with pagination and filtering
@@ -383,6 +385,22 @@ const queryClient = new QueryClient({
 });
 
 /**
+ * Logs page router wrapper
+ * Handles hash-based routing for logs and style showcase pages
+ */
+const LogsPageRouter = () => {
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<LogsPageContent />} />
+        <Route path="/style" element={<StyleShowcase />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </HashRouter>
+  );
+};
+
+/**
  * Logs page with providers
  * This is the entry point that sets up React Query and Material-UI
  */
@@ -390,7 +408,7 @@ const LogsPage = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <FluxAppProvider>
-        <LogsPageContent />
+        <LogsPageRouter />
       </FluxAppProvider>
     </QueryClientProvider>
   );
