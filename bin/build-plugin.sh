@@ -420,6 +420,8 @@ find "$TRUNK_DIR" -mindepth 1 ! -path '*/.svn*' -delete 2>/dev/null || true
 echo "📋 Copying plugin files to trunk (excluding development files)..."
 rsync -av \
     --exclude='bin' \
+    --exclude='vendor/stratease/*/bin' \
+    --exclude='vendor-prefixed/stratease/*/bin' \
     --exclude='node_modules' \
     --exclude='.git' \
     --exclude='.vscode' \
