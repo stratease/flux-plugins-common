@@ -33,6 +33,114 @@ const FluxAppProvider = ({ children }) => {
             z-index: 1 !important;
           }
 
+          /* Override WordPress admin styles that affect MUI components */
+          /* Focus on only the explicitly problematic areas */
+          
+          /* Typography fixes - WordPress admin often sets small font-sizes */
+          /* Use px values to avoid rem/em calculation conflicts with WordPress */
+          .MuiTypography-root {
+            font-size: inherit !important;
+            line-height: inherit !important;
+            margin: 0 !important;
+          }
+          
+          .MuiTypography-h1 {
+            font-size: 40px !important;
+            font-weight: 600 !important;
+            line-height: 1.2 !important;
+          }
+          
+          .MuiTypography-h2 {
+            font-size: 32px !important;
+            font-weight: 600 !important;
+            line-height: 1.3 !important;
+          }
+          
+          .MuiTypography-h3 {
+            font-size: 28px !important;
+            font-weight: 600 !important;
+            line-height: 1.3 !important;
+          }
+          
+          .MuiTypography-h4 {
+            font-size: 24px !important;
+            font-weight: 600 !important;
+            line-height: 1.4 !important;
+          }
+          
+          .MuiTypography-h5 {
+            font-size: 20px !important;
+            font-weight: 600 !important;
+            line-height: 1.4 !important;
+          }
+          
+          .MuiTypography-h6 {
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            line-height: 1.5 !important;
+          }
+          
+          .MuiTypography-body1 {
+            font-size: 16px !important;
+            line-height: 1.5 !important;
+          }
+          
+          .MuiTypography-body2 {
+            font-size: 14px !important;
+            line-height: 1.43 !important;
+          }
+          
+          .MuiTypography-caption {
+            font-size: 12px !important;
+            line-height: 1.66 !important;
+          }
+
+          /* TextField and Input fixes - fix border and placeholder spacing issues */
+          .MuiInputBase-input {
+            font-size: 16px !important;
+            padding: 16.5px 14px !important;
+          }
+          
+          .MuiInputBase-input::placeholder {
+            font-size: 16px !important;
+            opacity: 0.42 !important;
+          }
+
+          /* Outlined Input border fixes */
+          .MuiOutlinedInput-notchedOutline {
+            border-width: 1px !important;
+            border-color: rgba(0, 0, 0, 0.23) !important;
+          }
+          
+          .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+            border-color: rgba(0, 0, 0, 0.87) !important;
+          }
+          
+          .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+            border-width: 2px !important;
+          }
+
+          /* Override WordPress form styles that affect MUI inputs */
+          .MuiTextField-root input,
+          .MuiTextField-root textarea,
+          .MuiInputBase-input {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            outline: none !important;
+          }
+          
+          /* Ensure MUI buttons are not affected by WordPress button styles */
+          .MuiButton-root,
+          .MuiIconButton-root {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+          }
+          
+          .MuiButton-contained {
+            box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12) !important;
+          }
         `}
       />
       {children}
