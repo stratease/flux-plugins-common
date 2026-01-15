@@ -6,8 +6,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Find the plugin root by locating a PHP file with a Plugin Name header.
 find_plugin_file() {
     local search_dir=$1
