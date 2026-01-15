@@ -18,6 +18,10 @@
             "FluxPlugins\\Common\\": "src/"
         }
     },
+    "bin": [
+        "bin/build-plugin.sh",
+        "bin/deploy-plugin.sh"
+    ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "archive": {
