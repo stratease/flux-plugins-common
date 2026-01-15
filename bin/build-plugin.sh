@@ -377,25 +377,54 @@ fi
 # Change to plugin directory
 cd "$PLUGIN_DIR"
 
-# Check if SVN is available (needed for checkout)
-if ! command -v svn &> /dev/null; then
-    echo "⚠️  Warning: SVN is not installed. Build will proceed but deploy will require SVN."
-fi
-
-# Setup SVN repo structure
+# Setup SVN repo structure (optional - will use local directory if SVN not available)
 WPORG_DIR="$PLUGIN_DIR/wporg"
 SVN_REPO_URL="https://plugins.svn.wordpress.org/$PLUGIN_NAME"
 TRUNK_DIR="$WPORG_DIR/trunk"
+SVN_AVAILABLE=false
+SVN_SETUP=false
 
-# Check if SVN repo is checked out, if not, do a shallow checkout
-if [ ! -d "$WPORG_DIR/.svn" ]; then
-    echo "📦 SVN repository not found. Checking out..."
-    echo "   This may take a few moments..."
-    mkdir -p "$WPORG_DIR"
-    svn checkout "$SVN_REPO_URL" "$WPORG_DIR" --depth immediates
-    svn update "$TRUNK_DIR" --set-depth infinity
-    echo "✅ SVN repository checked out."
+# Check if SVN is available
+if command -v svn &> /dev/null; then
+    SVN_AVAILABLE=true
+else
+    echo "ℹ️  SVN is not installed. Building to local directory (wporg/trunk/)."
+    echo "   Deploy to WordPress.org SVN will require SVN installation."
     echo ""
+fi
+
+# Try to setup SVN repo if available
+if [ "$SVN_AVAILABLE" = true ]; then
+    # Check if SVN repo is already checked out
+    if [ -d "$WPORG_DIR/.svn" ]; then
+        SVN_SETUP=true
+        echo "📦 Using existing SVN repository."
+    else
+        # Try to checkout SVN repo
+        echo "📦 SVN repository not found. Attempting to check out..."
+        echo "   This may take a few moments..."
+        mkdir -p "$WPORG_DIR"
+        if svn checkout "$SVN_REPO_URL" "$WPORG_DIR" --depth immediates 2>/dev/null; then
+            if svn update "$TRUNK_DIR" --set-depth infinity 2>/dev/null; then
+                SVN_SETUP=true
+                echo "✅ SVN repository checked out successfully."
+            else
+                echo "⚠️  SVN checkout completed but trunk update failed. Using local directory."
+                SVN_SETUP=false
+            fi
+        else
+            echo "⚠️  SVN checkout failed (repository may not exist yet or requires authentication)."
+            echo "   Continuing with local build directory..."
+            SVN_SETUP=false
+        fi
+        echo ""
+    fi
+fi
+
+# Ensure trunk directory exists (create if SVN not available or setup failed)
+if [ ! -d "$TRUNK_DIR" ]; then
+    echo "📁 Creating local build directory: $TRUNK_DIR"
+    mkdir -p "$TRUNK_DIR"
 fi
 
 # Install production-only dependencies
@@ -413,8 +442,13 @@ echo "📦 Building files directly into SVN trunk (single source of truth)..."
 # Ensure trunk directory exists
 mkdir -p "$TRUNK_DIR"
 
-# Remove existing files in trunk (but preserve .svn directory)
-find "$TRUNK_DIR" -mindepth 1 ! -path '*/.svn*' -delete 2>/dev/null || true
+# Remove existing files in trunk (but preserve .svn directory if it exists)
+if [ "$SVN_SETUP" = true ]; then
+    find "$TRUNK_DIR" -mindepth 1 ! -path '*/.svn*' -delete 2>/dev/null || true
+else
+    # For local builds, remove everything (no .svn to preserve)
+    find "$TRUNK_DIR" -mindepth 1 -delete 2>/dev/null || true
+fi
 
 # Copy files to trunk with exclusions (single set of exclusions)
 echo "📋 Copying plugin files to trunk (excluding development files)..."
@@ -475,13 +509,25 @@ echo ""
 echo "✅ Plugin built successfully!"
 echo "📦 Zip File: $ZIP_FILE"
 echo "📏 Zip Size: $ZIP_SIZE"
-echo "📦 SVN Trunk: $TRUNK_DIR"
-echo "📏 Trunk Size: $TRUNK_SIZE"
+echo "📦 Build Directory: $TRUNK_DIR"
+echo "📏 Build Size: $TRUNK_SIZE"
 echo "🏷️  Version: $VERSION"
-echo ""
-echo "📝 Next Step:"
-echo "   Run ./bin/deploy-plugin.sh to commit and tag this version in SVN"
-echo "   Files are ready in: $TRUNK_DIR"
+if [ "$SVN_SETUP" = true ]; then
+    echo "📦 SVN: Connected to WordPress.org repository"
+    echo ""
+    echo "📝 Next Step:"
+    echo "   Run ./bin/deploy-plugin.sh to commit and tag this version in SVN"
+else
+    echo "📦 SVN: Not connected (local build only)"
+    echo ""
+    echo "📝 Next Steps:"
+    echo "   - Files are ready in: $TRUNK_DIR"
+    if [ "$SVN_AVAILABLE" = false ]; then
+        echo "   - Install SVN to enable deployment to WordPress.org"
+    else
+        echo "   - Set up SVN repository to enable deployment"
+    fi
+fi
 echo ""
 
 # Output git tag command if version was bumped (at end so it doesn't get lost)
