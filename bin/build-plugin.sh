@@ -6,6 +6,14 @@
 
 set -e
 
+# Fix execute permissions if needed (for Strauss-copied files).
+# This is a fallback - fix-bin-wrappers.php should handle this, but this ensures it works.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_FILE="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
+if [ ! -x "$SCRIPT_FILE" ]; then
+    chmod +x "$SCRIPT_FILE" 2>/dev/null || true
+fi
+
 # Find the plugin root by locating a PHP file with a Plugin Name header.
 find_plugin_file() {
     local search_dir=$1

@@ -1,13 +1,16 @@
 #!/usr/bin/env php
 <?php
 /**
- * Fix Composer bin wrapper paths for Strauss-prefixed packages.
+ * Fix Composer bin wrapper paths and execute permissions for Strauss-prefixed packages.
  *
  * Composer generates bin wrappers that point to vendor/stratease/flux-plugins-common/bin,
  * but because of Strauss, the actual scripts are in vendor-prefixed/stratease/flux-plugins-common/bin.
- * This script fixes the wrapper paths to point to the correct location.
+ * This script:
+ * 1. Fixes wrapper paths to point to the correct location (vendor-prefixed).
+ * 2. Fixes execute permissions on scripts in vendor-prefixed (Strauss copies files without preserving permissions).
  *
  * @package FluxPlugins\Common\Bin
+ * @since 1.0.0
  */
 
 // Get the plugin root directory (where composer.json is located).
@@ -48,6 +51,27 @@ if ( ! is_dir( $vendor_bin_dir ) ) {
 }
 
 $fixed_count = 0;
+$permission_fixed_count = 0;
+
+// First, fix execute permissions on all scripts in vendor-prefixed (regardless of wrapper existence).
+// Strauss copies files without preserving permissions, so we always need to check this.
+foreach ( $bin_scripts as $script_name ) {
+    $actual_script_path = $vendor_prefixed_bin_dir . '/' . $script_name;
+    if ( file_exists( $actual_script_path ) ) {
+        // Check current permissions.
+        $current_perms = fileperms( $actual_script_path );
+        // Check if execute bit is set for owner, group, or others.
+        if ( ! ( $current_perms & 0111 ) ) {
+            // Add execute permissions (755 = rwxr-xr-x).
+            if ( chmod( $actual_script_path, 0755 ) ) {
+                $permission_fixed_count++;
+                echo "✅ Fixed execute permissions: $script_name\n";
+            } else {
+                fwrite( STDERR, "⚠️  Warning: Could not set execute permissions on: $actual_script_path\n" );
+            }
+        }
+    }
+}
 
 // Fix each bin script wrapper.
 foreach ( $bin_scripts as $script_name ) {
@@ -79,12 +103,17 @@ foreach ( $bin_scripts as $script_name ) {
         }
         
         $fixed_count++;
-        echo "✅ Fixed wrapper: $script_name\n";
+        echo "✅ Fixed wrapper path: $script_name\n";
     }
 }
 
-if ( $fixed_count > 0 ) {
-    echo "✅ Fixed $fixed_count bin wrapper(s).\n";
+if ( $fixed_count > 0 || $permission_fixed_count > 0 ) {
+    if ( $fixed_count > 0 ) {
+        echo "✅ Fixed $fixed_count bin wrapper path(s).\n";
+    }
+    if ( $permission_fixed_count > 0 ) {
+        echo "✅ Fixed $permission_fixed_count script permission(s).\n";
+    }
 } else {
     echo "ℹ️  No wrappers needed fixing.\n";
 }
