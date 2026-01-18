@@ -109,5 +109,43 @@ class AccountIdService {
 		$data[8] = chr( ord( $data[8] ) & 0x3f | 0x80 ); // Set bits 6-7 to 10.
 		return vsprintf( '%s%s-%s-%s-%s-%s%s%s', str_split( bin2hex( $data ), 4 ) );
 	}
+
+	/**
+	 * Get obfuscated account ID.
+	 *
+	 * Retrieves the account ID and returns it obfuscated (shows only the first 4 characters).
+	 * Useful for logging, display, or any context where the full account ID should be hidden.
+	 *
+	 * @since 1.0.0
+	 * @return string Obfuscated account ID (e.g., "abcd-****-****-****-********").
+	 */
+	public function obfuscate_account_id() {
+		$account_id = $this->get_account_id();
+		return self::obfuscate( $account_id );
+	}
+
+	/**
+	 * Obfuscate an account ID string.
+	 *
+	 * Shows only the first 4 characters and masks the rest with asterisks.
+	 * Static helper for obfuscating any account ID string.
+	 *
+	 * @since 1.0.0
+	 * @param string $account_id The account ID to obfuscate.
+	 * @return string Obfuscated account ID (e.g., "abcd-****-****-****-********").
+	 */
+	public static function obfuscate( $account_id ) {
+		if ( empty( $account_id ) || ! is_string( $account_id ) ) {
+			return '****';
+		}
+
+		// Show first 4 characters, mask the rest.
+		$length = strlen( $account_id );
+		if ( $length <= 4 ) {
+			return str_repeat( '*', $length );
+		}
+
+		return substr( $account_id, 0, 4 ) . str_repeat( '*', $length - 4 );
+	}
 }
 

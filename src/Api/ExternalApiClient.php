@@ -150,7 +150,7 @@ class ExternalApiClient {
 			$request_body['plugin_version'] = sanitize_text_field( $plugin_version );
 		}
 
-		$this->logger->debug( "Activating license for account {$account_id}, domain: {$website_domain}" );
+		$this->logger->debug( "Activating license for account " . AccountIdService::get_instance()->obfuscate_account_id() . ", domain: {$website_domain}" );
 
 		$response = wp_remote_post(
 			$endpoint,
@@ -230,7 +230,7 @@ class ExternalApiClient {
 			'domain'      => esc_url_raw( $website_domain ),
 		];
 
-		$this->logger->debug( "Validating license for account {$account_id}, domain: {$website_domain}" );
+		$this->logger->debug( "Validating license for account " . AccountIdService::get_instance()->obfuscate_account_id() . ", domain: {$website_domain}" );
 
 		$response = wp_remote_post(
 			$endpoint,
@@ -553,7 +553,7 @@ class ExternalApiClient {
 		if ( $status_code === 200 ) {
 			$valid = isset( $data['valid'] ) ? (bool) $data['valid'] : false;
 			// Success is expected, log as debug.
-			$this->logger->debug( "License {$operation} successful for account {$account_id}, valid: " . ( $valid ? 'true' : 'false' ) );
+			$this->logger->debug( "License {$operation} successful for account " . AccountIdService::get_instance()->obfuscate_account_id() . ", valid: " . ( $valid ? 'true' : 'false' ) );
 
 			return [
 				'success' => true,
