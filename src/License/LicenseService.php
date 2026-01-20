@@ -8,6 +8,10 @@
 
 namespace FluxPlugins\Common\License;
 
+use FluxPlugins\Common\Api\ExternalApiClient;
+use FluxPlugins\Common\Logger\Logger;
+use FluxPlugins\Common\Account\AccountIdService;
+
 /**
  * License service.
  *
@@ -125,10 +129,14 @@ class LicenseService {
 	 * 1. A license key exists, AND
 	 * 2. The license has been validated within the last 24 hours
 	 *
+	 * If the cache check fails (expired or missing), this method will automatically
+	 * attempt to re-validate via the API to update the cache.
+	 *
 	 * @since 1.0.0
+	 * @param bool $auto_validate Whether to automatically validate if cache is expired. Default true.
 	 * @return bool True if license is valid, false otherwise.
 	 */
-	public function is_license_valid() {
+	public function is_license_valid( $auto_validate = true ) {
 		$license_key = $this->get_license_key();
 		
 		if ( empty( $license_key ) ) {
@@ -137,14 +145,37 @@ class LicenseService {
 
 		$last_valid_date = $this->get_license_last_valid_date();
 		
+		// If no validation date, try auto-validation if enabled
 		if ( empty( $last_valid_date ) ) {
-			return false;
+			if ( $auto_validate ) {
+				$this->maybe_auto_validate();
+				// Check again after auto-validation
+				$last_valid_date = $this->get_license_last_valid_date();
+				if ( empty( $last_valid_date ) ) {
+					return false;
+				}
+			} else {
+				return false;
+			}
 		}
 
-		// Check if validation date is within last 24 hours
-		$last_valid_timestamp = strtotime( $last_valid_date . ' UTC' );
-		$current_timestamp = time();
+		// Check if validation date is within last 24 hours using WordPress timezone functions
+		$last_valid_timestamp = mysql2date( 'U', $last_valid_date, false ); // false = GMT/UTC
+		$current_timestamp = current_time( 'timestamp', true ); // true = GMT/UTC
 		$hours_since_validation = ( $current_timestamp - $last_valid_timestamp ) / HOUR_IN_SECONDS;
+
+		// If cache expired and auto-validation is enabled, try to re-validate
+		if ( $hours_since_validation >= 24 && $auto_validate ) {
+			$this->maybe_auto_validate();
+			// Re-check after auto-validation
+			$last_valid_date = $this->get_license_last_valid_date();
+			if ( empty( $last_valid_date ) ) {
+				return false;
+			}
+			$last_valid_timestamp = mysql2date( 'U', $last_valid_date, false );
+			$current_timestamp = current_time( 'timestamp', true );
+			$hours_since_validation = ( $current_timestamp - $last_valid_timestamp ) / HOUR_IN_SECONDS;
+		}
 
 		// License is valid if validated within last 24 hours
 		return $hours_since_validation < 24;
@@ -181,6 +212,23 @@ class LicenseService {
 	 * @var int
 	 */
 	const TRANSIENT_EXPIRATION = DAY_IN_SECONDS;
+
+	/**
+	 * Transient name for auto-validation lock.
+	 * Prevents multiple simultaneous auto-validations.
+	 *
+	 * @since 1.1.0
+	 * @var string
+	 */
+	const TRANSIENT_NAME_AUTO_VALIDATION_LOCK = 'flux-plugins_license_auto_validation_lock';
+
+	/**
+	 * Auto-validation lock duration (5 minutes).
+	 *
+	 * @since 1.1.0
+	 * @var int
+	 */
+	const AUTO_VALIDATION_LOCK_DURATION = 300;
 
 	/**
 	 * Check license validity and update notice transient.
@@ -275,6 +323,58 @@ class LicenseService {
 		$has_license_key = ! empty( $this->get_license_key() );
 
 		return $has_transient && $has_license_key;
+	}
+
+	/**
+	 * Automatically validate license if cache is expired.
+	 *
+	 * Uses a transient lock to prevent multiple simultaneous validations.
+	 * Only attempts validation if we're in a context where API calls are possible
+	 * (REST API, admin context, or cron).
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	private function maybe_auto_validate() {
+		$license_key = $this->get_license_key();
+		
+		// Only validate if we have a license key
+		if ( empty( $license_key ) ) {
+			return;
+		}
+
+		// Check if auto-validation is already in progress (prevent concurrent requests)
+		$lock = get_site_transient( self::TRANSIENT_NAME_AUTO_VALIDATION_LOCK );
+		if ( $lock !== false ) {
+			return;
+		}
+
+		// Only attempt auto-validation in contexts where HTTP requests are possible
+		// Skip during early WordPress loading when functions might not be available
+		if ( ! did_action( 'plugins_loaded' ) ) {
+			return;
+		}
+
+		// Set lock to prevent concurrent validations
+		set_site_transient( self::TRANSIENT_NAME_AUTO_VALIDATION_LOCK, true, self::AUTO_VALIDATION_LOCK_DURATION );
+
+		$logger = Logger::get_instance();
+		$api_client = new ExternalApiClient( $logger );
+		$validation_result = $api_client->validate_license( $license_key );
+
+		// Update cache based on validation result
+		if ( $validation_result && is_array( $validation_result ) ) {
+			if ( isset( $validation_result['success'] ) && $validation_result['success'] && isset( $validation_result['valid'] ) && $validation_result['valid'] ) {
+				// License is valid - update cache
+				$this->set_license_last_valid_date( current_time( 'mysql', true ) );
+			} else {
+				// License is invalid - clear cache
+				$this->set_license_last_valid_date( null );
+			}
+		}
+
+		// Remove lock after validation attempt
+		delete_site_transient( self::TRANSIENT_NAME_AUTO_VALIDATION_LOCK );
 	}
 }
 
