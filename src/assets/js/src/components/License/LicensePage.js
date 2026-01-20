@@ -211,81 +211,9 @@ const LicensePageContent = () => {
             </Link>
           </Typography>
         ) : (
-          <>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              {__('Enter your Flux Suite license key to unlock premium features across all Flux Suite plugins.', 'flux-plugins-common')}
-            </Typography>
-            
-            <Card
-              variant="outlined"
-              sx={{
-                mb: 4,
-                border: '1px solid',
-                borderColor: 'primary.main',
-                backgroundColor: 'action.hover',
-              }}
-            >
-              <CardContent>
-                <Stack spacing={2}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Star sx={{ color: 'primary.main' }} />
-                    <Typography variant="h6" component="h3">
-                      {__('Upgrade to Pro', 'flux-plugins-common')}
-                    </Typography>
-                  </Box>
-                  
-                  <Typography variant="body2" color="text.secondary">
-                    {__('Get more powerful features with Flux Suite Pro:', 'flux-plugins-common')}
-                  </Typography>
-
-                  <Stack spacing={1}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
-                      <Typography variant="body2">
-                        {__('AI-Powered Features Across All Plugins', 'flux-plugins-common')}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
-                      <Typography variant="body2">
-                        {__('Advanced Automation and Scheduling', 'flux-plugins-common')}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
-                      <Typography variant="body2">
-                        {__('CDN Integration for Faster Delivery', 'flux-plugins-common')}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
-                      <Typography variant="body2">
-                        {__('Premium Features Across All Flux Suite Plugins', 'flux-plugins-common')}
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  <Divider />
-
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    href="https://fluxplugins.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    fullWidth
-                    sx={{ fontWeight: 600 }}
-                  >
-                    {__('Get Your License', 'flux-plugins-common')}
-                  </Button>
-
-                  <Typography variant="caption" color="text.secondary" align="center">
-                    {__('Single license unlocks all premium features', 'flux-plugins-common')}
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          </>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            {__('Enter your Flux Suite license key to unlock premium features across all Flux Suite plugins.', 'flux-plugins-common')}
+          </Typography>
         )}
 
         {licenseError && (
@@ -310,7 +238,7 @@ const LicensePageContent = () => {
         )}
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={6}>
             <Stack spacing={2}>
               <TextField
                 fullWidth
@@ -362,6 +290,80 @@ const LicensePageContent = () => {
               )}
             </Stack>
           </Grid>
+
+          {!(licenseKey && licenseData?.license_is_valid) && (
+            <Grid item xs={12} md={6}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%',
+                  border: '1px solid',
+                  borderColor: 'primary.main',
+                  backgroundColor: 'action.hover',
+                }}
+              >
+                <CardContent>
+                  <Stack spacing={2}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Star sx={{ color: 'primary.main' }} />
+                      <Typography variant="h6" component="h3">
+                        {__('Upgrade to Pro', 'flux-plugins-common')}
+                      </Typography>
+                    </Box>
+                    
+                    <Typography variant="body2" color="text.secondary">
+                      {__('Get more powerful features with Flux Suite Pro:', 'flux-plugins-common')}
+                    </Typography>
+
+                    <Stack spacing={1}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                        <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
+                        <Typography variant="body2">
+                          {__('AI-Powered Features Across All Plugins', 'flux-plugins-common')}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                        <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
+                        <Typography variant="body2">
+                          {__('Advanced Automation and Scheduling', 'flux-plugins-common')}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                        <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
+                        <Typography variant="body2">
+                          {__('CDN Integration for Faster Delivery', 'flux-plugins-common')}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                        <CheckCircle sx={{ fontSize: '1.2rem', color: 'success.main', mt: 0.25 }} />
+                        <Typography variant="body2">
+                          {__('Premium Features Across All Flux Suite Plugins', 'flux-plugins-common')}
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <Divider />
+
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      href="https://fluxplugins.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      fullWidth
+                      sx={{ fontWeight: 600 }}
+                    >
+                      {__('Get Your License', 'flux-plugins-common')}
+                    </Button>
+
+                    <Typography variant="caption" color="text.secondary" align="center">
+                      {__('Single license unlocks all premium features', 'flux-plugins-common')}
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
         </Grid>
 
       {/* Account ID Section - At the bottom for technical support reference */}

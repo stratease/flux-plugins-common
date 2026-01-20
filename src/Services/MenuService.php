@@ -533,7 +533,7 @@ class MenuService {
 			__( 'Professional AI-powered alt text generation with automation and bulk processing. Requires Flux AI Media Alt Creator free plugin.', I18n::domain() ),
 			'flux-ai-media-alt-creator-pro/flux-ai-media-alt-creator-pro.php',
 			'admin.php?page=flux-ai-media-alt-creator',
-			'https://fluxplugins.com/ai-media-alt-text-creator-pro',
+			'https://fluxplugins.com/ai-media-alt-creator-pro',
 			'dashicons-admin-media'
 		);
 
