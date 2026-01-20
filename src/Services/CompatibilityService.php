@@ -126,15 +126,16 @@ class CompatibilityService {
 	}
 
 	/**
-	 * Perform initialization on 'init' hook.
+	 * Ensure validator is initialized.
 	 *
-	 * Initializes compatibility validator for this plugin instance.
-	 * This runs after WordPress core is loaded and translations are available.
+	 * Initializes the compatibility validator if it hasn't been initialized yet.
+	 * This can be called directly to ensure the validator is available during
+	 * WP cron, REST requests, or other contexts where 'init' may not have fired.
 	 *
-	 * @since 1.0.0
+	 * @since 1.1.0
 	 * @return void
 	 */
-	public function do_init() {
+	private function ensure_validator_initialized() {
 		// Skip if already initialized.
 		if ( $this->validator !== null ) {
 			return;
@@ -161,10 +162,25 @@ class CompatibilityService {
 	}
 
 	/**
+	 * Perform initialization on 'init' hook.
+	 *
+	 * Initializes compatibility validator for this plugin instance.
+	 * This runs after WordPress core is loaded and translations are available.
+	 * Uses ensure_validator_initialized() to handle the actual initialization logic.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function do_init() {
+		$this->ensure_validator_initialized();
+	}
+
+	/**
 	 * Perform admin initialization on 'admin_init' hook.
 	 *
 	 * Initializes notice handler and enqueues assets for this plugin instance.
 	 * This runs in admin context only, after WordPress admin is ready.
+	 * Handles only admin-specific concerns (notices and assets).
 	 *
 	 * @since 1.0.0
 	 * @return void
@@ -175,7 +191,10 @@ class CompatibilityService {
 			return;
 		}
 
-		// Ensure validator exists (should have been created in do_init()).
+		// Ensure validator is initialized (for admin notices).
+		$this->ensure_validator_initialized();
+		
+		// If validator still doesn't exist, we can't show notices.
 		if ( $this->validator === null ) {
 			return;
 		}
@@ -257,11 +276,21 @@ class CompatibilityService {
 	/**
 	 * Get compatibility validator instance.
 	 *
+	 * Ensures validator is initialized before returning it.
+	 * This allows the validator to be available during WP cron, REST requests,
+	 * and other contexts where the 'init' hook may not have fired yet.
+	 *
 	 * @since 1.0.0
-	 * @return CompatibilityValidator|null Compatibility validator instance or null if not initialized.
+	 * @return CompatibilityValidator|null Compatibility validator instance or null if plugin not initialized.
 	 */
 	public static function get_validator() {
 		$instance = self::get_instance();
+		
+		// Ensure validator is initialized if plugin data is available.
+		if ( $instance->validator === null && $instance->plugin_slug !== null ) {
+			$instance->ensure_validator_initialized();
+		}
+		
 		return $instance->validator;
 	}
 

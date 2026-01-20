@@ -211,9 +211,9 @@ const LicensePageContent = () => {
             </Link>
           </Typography>
         ) : (
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {__('Enter your Flux Suite license key to unlock premium features across all Flux Suite plugins.', 'flux-plugins-common')}
-          </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {__('Enter your Flux Suite license key to unlock premium features across all Flux Suite plugins.', 'flux-plugins-common')}
+            </Typography>
         )}
 
         {licenseError && (
