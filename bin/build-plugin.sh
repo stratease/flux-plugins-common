@@ -52,6 +52,24 @@ PLUGIN_NAME="$(basename "$PLUGIN_DIR")"
 PACKAGE_JSON="$PLUGIN_DIR/package.json"
 README_FILE="$PLUGIN_DIR/readme.txt"
 
+# Remove Windows Zone.Identifier files (alternate data streams that can accidentally get copied)
+# These files are created by Windows when downloading files from the internet
+echo "🧹 Cleaning up Windows Zone.Identifier files..."
+ZONE_IDENTIFIER_COUNT=0
+# Use find to locate all :Zone.Identifier files in the plugin directory
+while IFS= read -r -d '' file; do
+    if [ -f "$file" ]; then
+        rm -f "$file" 2>/dev/null && ZONE_IDENTIFIER_COUNT=$((ZONE_IDENTIFIER_COUNT + 1))
+    fi
+done < <(find "$PLUGIN_DIR" -type f -name "*:Zone.Identifier" -print0 2>/dev/null || true)
+
+if [ "$ZONE_IDENTIFIER_COUNT" -gt 0 ]; then
+    echo "   ✅ Removed $ZONE_IDENTIFIER_COUNT Zone.Identifier file(s)"
+else
+    echo "   ℹ️  No Zone.Identifier files found"
+fi
+echo ""
+
 # Detect the version constant name in the plugin file (e.g., FLUX_MEDIA_OPTIMIZER_VERSION).
 VERSION_CONST_NAME=$(grep -E "define\(\s*'[^']+_VERSION'" "$PLUGIN_FILE" | head -1 | sed -n "s/.*'\([^']\+_VERSION\)'.*/\1/p")
 
