@@ -144,6 +144,74 @@ For development with watch mode:
 npm run dev
 ```
 
+## Asset Management
+
+### Asset URL Configuration
+
+The common library requires a URL path to the plugin's common assets folder. This allows assets to be served from the plugin's own directory instead of the vendor-prefixed location, providing cleaner URLs and easier debugging.
+
+**Initialization:**
+
+```php
+use FluxPlugins\Common\FluxPlugins;
+
+// Initialize with common assets URL
+FluxPlugins::init(
+    'your-plugin-slug',
+    '1.0.0',
+    'your-text-domain',
+    plugin_dir_url( __FILE__ ) . 'src/assets/common/' // Common assets URL
+);
+```
+
+The common assets URL should point to a directory within your plugin where the common library assets will be copied. This URL is passed to `MenuService` and `CompatibilityService` for enqueuing scripts and styles.
+
+### Composer Script Setup
+
+Each plugin must copy common library assets from `vendor/` to `src/assets/common/` **before** Strauss runs. Add this to your `composer.json`:
+
+```json
+{
+    "scripts": {
+        "copy-common-assets": [
+            "sh -c 'if [ -d vendor/stratease/flux-plugins-common/src/assets ]; then mkdir -p src/assets/common && cp -r vendor/stratease/flux-plugins-common/src/assets/* src/assets/common/ && echo \"✅ Copied common library assets to src/assets/common/\"; else echo \"⚠️  Common library assets not found in vendor/\"; fi'"
+        ],
+        "prefix-namespaces": [
+            "@copy-common-assets",
+            "sh -c 'test -f ./bin/strauss.phar || curl -o bin/strauss.phar -L -C - https://github.com/BrianHenryIE/strauss/releases/latest/download/strauss.phar'",
+            "@php bin/strauss.phar",
+            "@composer dump-autoload",
+            "@fix-bin-wrappers"
+        ]
+    }
+}
+```
+
+**Important:** The `copy-common-assets` script must run **BEFORE** `prefix-namespaces` (Strauss) so that assets are available in the plugin's directory structure before Strauss processes the vendor files.
+
+### Directory Structure
+
+After running `composer install` or `composer update`, your plugin should have this structure:
+
+```
+your-plugin/
+├── src/
+│   └── assets/
+│       └── common/          # Copied from vendor before Strauss
+│           ├── js/
+│           │   ├── dist/    # Built bundles
+│           │   └── src/     # Source files
+│           └── images/      # Image assets
+├── vendor/                  # Original Composer dependencies
+└── vendor-prefixed/         # Strauss-prefixed dependencies
+```
+
+The `src/assets/common/` directory contains all common library assets and is used for enqueuing scripts and styles. This directory should be included in your plugin's build/deployment process.
+
+### Backwards Compatibility
+
+If no common assets URL is provided during initialization, the library will fall back to using the vendor-prefixed path for asset enqueuing. This ensures backwards compatibility with existing plugins that haven't been updated yet.
+
 ## Quick Start
 
 In your plugin's main file, initialize the common library:
@@ -151,8 +219,13 @@ In your plugin's main file, initialize the common library:
 ```php
 use FluxPlugins\Common\FluxPlugins;
 
-// Initialize the common library
-FluxPlugins::init('your-plugin-slug', '1.0.0', 'your-plugin-text-domain');
+// Initialize the common library with common assets URL
+FluxPlugins::init(
+    'your-plugin-slug',
+    '1.0.0',
+    'your-plugin-text-domain',
+    plugin_dir_url( __FILE__ ) . 'src/assets/common/' // Common assets URL
+);
 ```
 
 This single call will:
@@ -162,6 +235,7 @@ This single call will:
 - Register License page (shared across all plugins)
 - Register Logs page (shared across all plugins)
 - Initialize compatibility validation system for your plugin
+- Configure asset enqueuing to use the provided common assets URL
 - Set up internationalization with your plugin's text domain
 
 ## Factory Pattern
@@ -179,7 +253,7 @@ All services follow the singleton factory pattern for consistency and maintainab
 
 ```php
 // Initialize the library (once per plugin)
-FluxPlugins::init('your-plugin-slug', '1.0.0', 'your-plugin-text-domain');
+FluxPlugins::init('your-plugin-slug', '1.0.0', 'your-plugin-text-domain', plugin_dir_url( __FILE__ ) . 'src/assets/common/');
 
 // Access services using factory methods (no plugin slug needed)
 $validator = CompatibilityService::get_validator(); // Uses current plugin from init()
@@ -302,7 +376,7 @@ add_action( 'plugins_loaded', 'your_plugin_init' );
 function your_plugin_init() {
     // Initialize Flux Plugins common library
     // This handles account ID, menu setup, REST API routes, and required pages
-    FluxPlugins::init( YOUR_PLUGIN_PLUGIN_SLUG, YOUR_PLUGIN_VERSION, 'your-plugin-text-domain' );
+    FluxPlugins::init( YOUR_PLUGIN_PLUGIN_SLUG, YOUR_PLUGIN_VERSION, 'your-plugin-text-domain', YOUR_PLUGIN_PLUGIN_URL . 'src/assets/common/' );
     
     // Initialize your plugin's main class
     $your_plugin = new YourPlugin\App\Plugin();
@@ -803,7 +877,7 @@ function your_plugin_init() {
     // - REST API route registration (shared)
     // - Compatibility validation system
     // - Internationalization setup
-    FluxPlugins::init( YOUR_PLUGIN_PLUGIN_SLUG, YOUR_PLUGIN_VERSION, 'your-plugin-text-domain' );
+    FluxPlugins::init( YOUR_PLUGIN_PLUGIN_SLUG, YOUR_PLUGIN_VERSION, 'your-plugin-text-domain', YOUR_PLUGIN_PLUGIN_URL . 'src/assets/common/' );
     
     // Initialize your plugin's main class
     $your_plugin = new Plugin();

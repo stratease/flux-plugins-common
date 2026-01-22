@@ -97,6 +97,14 @@ class MenuService {
 	const LOGS_PAGE_SLUG = 'flux-suite-logs';
 
 	/**
+	 * Common assets URL.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private $common_assets_url = '';
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @since 1.0.0
@@ -126,9 +134,13 @@ class MenuService {
 	 * are not available in WP-CLI or frontend contexts.
 	 *
 	 * @since 1.0.0
+	 * @param string $common_assets_url URL path to plugin's common assets folder (e.g., plugin_dir_url(__FILE__) . 'src/assets/common/').
 	 * @return void
 	 */
-	public function init() {
+	public function init( $common_assets_url = '' ) {
+		// Store common assets URL for asset enqueuing.
+		$this->common_assets_url = $common_assets_url;
+
 		// Ensure top-level menu is registered.
 		// This ensures the menu exists even if no submenu pages are registered yet.
 		$this->register_top_level_menu();
@@ -848,21 +860,21 @@ class MenuService {
 	 * Get common library asset URL.
 	 *
 	 * Returns the URL to an asset in the common library's assets directory.
-	 * The common library is self-contained and knows its own location.
-	 * Uses the same pattern as CompatibilityService for consistency.
+	 * Uses the URL provided during initialization, or falls back to vendor-prefixed path for backwards compatibility.
 	 *
 	 * @since 1.0.0
 	 * @param string $asset_path Relative path from assets directory (e.g., 'js/dist/license-page.bundle.js').
 	 * @return string Asset URL or empty string if not found.
 	 */
 	private function get_common_library_asset_url( $asset_path ) {
-		// Get the common library directory path.
+		// Use provided common assets URL if available.
+		if ( ! empty( $this->common_assets_url ) ) {
+			return trailingslashit( $this->common_assets_url ) . $asset_path;
+		}
+
+		// Fallback to vendor-prefixed path for backwards compatibility.
 		// This file is at: vendor-prefixed/stratease/flux-plugins-common/src/Services/MenuService.php
 		// Assets are at: vendor-prefixed/stratease/flux-plugins-common/src/assets/
-		// Assets are now in src/ so Strauss will copy them
-
-		// Get the URL using plugins_url - same pattern as CompatibilityService
-		// Use the assets directory directly
 		return plugins_url( 'src/assets/' . $asset_path, dirname( __DIR__ ) );
 	}
 

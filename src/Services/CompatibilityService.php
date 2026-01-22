@@ -65,6 +65,14 @@ class CompatibilityService {
 	private $plugin_version = null;
 
 	/**
+	 * Common assets URL.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private $common_assets_url = '';
+
+	/**
 	 * Compatibility validator instance.
 	 *
 	 * @since 1.0.0
@@ -109,14 +117,16 @@ class CompatibilityService {
 	 * on WordPress 'init' and 'admin_init' hooks to ensure proper timing.
 	 *
 	 * @since 1.0.0
-	 * @param string $plugin_slug    Plugin slug (e.g., 'flux-media-optimizer').
-	 * @param string $plugin_version Plugin version (e.g., '1.0.0').
+	 * @param string $plugin_slug       Plugin slug (e.g., 'flux-media-optimizer').
+	 * @param string $plugin_version    Plugin version (e.g., '1.0.0').
+	 * @param string $common_assets_url  URL path to plugin's common assets folder (e.g., plugin_dir_url(__FILE__) . 'src/assets/common/').
 	 * @return void
 	 */
-	public function init_plugin( $plugin_slug, $plugin_version ) {
+	public function init_plugin( $plugin_slug, $plugin_version, $common_assets_url = '' ) {
 		// Store plugin data.
-		$this->plugin_slug    = $plugin_slug;
-		$this->plugin_version = $plugin_version;
+		$this->plugin_slug       = $plugin_slug;
+		$this->plugin_version    = $plugin_version;
+		$this->common_assets_url = $common_assets_url;
 
 		// Hook into WordPress 'init' action for validator initialization.
 		add_action( 'init', [ $this, 'do_init' ], 10 );
@@ -237,12 +247,16 @@ class CompatibilityService {
 
 		// Hook into admin_enqueue_scripts to enqueue the compatibility dismiss script.
 		add_action( 'admin_enqueue_scripts', function() {
-			// Get the shared library directory path relative to this file.
-			// This file is at: vendor-prefixed/stratease/flux-plugins-common/src/Services/CompatibilityService.php
-			// Assets are at: vendor-prefixed/stratease/flux-plugins-common/src/assets/
-			// Assets are now in src/ so Strauss will copy them
-			$shared_lib_dir = dirname( dirname( __DIR__ ) );
-			$shared_lib_url = plugins_url( '', $shared_lib_dir . '/src/assets' );
+			// Use provided common assets URL if available.
+			if ( ! empty( $this->common_assets_url ) ) {
+				$shared_lib_url = $this->common_assets_url;
+			} else {
+				// Fallback to vendor-prefixed path for backwards compatibility.
+				// This file is at: vendor-prefixed/stratease/flux-plugins-common/src/Services/CompatibilityService.php
+				// Assets are at: vendor-prefixed/stratease/flux-plugins-common/src/assets/
+				$shared_lib_dir = dirname( dirname( __DIR__ ) );
+				$shared_lib_url = plugins_url( '', $shared_lib_dir . '/src/assets' );
+			}
 
 			// Determine script path based on SCRIPT_DEBUG (development vs production).
 			// Path is relative to the assets directory (which $shared_lib_url points to).

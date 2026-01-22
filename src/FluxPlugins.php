@@ -52,6 +52,14 @@ class FluxPlugins {
 	 */
 	private $plugin_version;
 
+	/**
+	 * Common assets URL.
+	 *
+	 * @since 1.1.0
+	 * @var string
+	 */
+	private $common_assets_url = '';
+
 
 	/**
 	 * Get singleton instance.
@@ -82,18 +90,20 @@ class FluxPlugins {
 	 * This method registers the initialization callbacks and should be called early in the plugin lifecycle.
 	 *
 	 * @since 1.0.0
-	 * @param string $plugin_slug    Plugin slug (e.g., 'flux-media-optimizer').
-	 * @param string $plugin_version Plugin version (e.g., '1.0.0').
-	 * @param string $text_domain     Text domain for translations (e.g., 'flux-media-optimizer').
+	 * @param string $plugin_slug       Plugin slug (e.g., 'flux-media-optimizer').
+	 * @param string $plugin_version    Plugin version (e.g., '1.0.0').
+	 * @param string $text_domain       Text domain for translations (e.g., 'flux-media-optimizer').
+	 * @param string $common_assets_url URL path to plugin's common assets folder (e.g., plugin_dir_url(__FILE__) . 'src/assets/common/').
 	 * @return void
 	 */
-	public static function init( $plugin_slug, $plugin_version, $text_domain ) {
+	public static function init( $plugin_slug, $plugin_version, $text_domain, $common_assets_url = '' ) {
 		// Load constants first.
 		require_once __DIR__ . '/includes/constants.php';
 
 		$instance = self::get_instance();
-		$instance->plugin_slug    = $plugin_slug;
-		$instance->plugin_version = $plugin_version;
+		$instance->plugin_slug       = $plugin_slug;
+		$instance->plugin_version    = $plugin_version;
+		$instance->common_assets_url  = $common_assets_url;
 
 		// Set text domain for internationalization service.
 		I18n::set_domain( $text_domain );
@@ -111,9 +121,9 @@ class FluxPlugins {
 		$rest_api_service = RestApiService::get_instance();
 		$rest_api_service->init();
 
-		// Initialize menu service.
+		// Initialize menu service with common assets URL.
 		$menu_service = MenuService::get_instance();
-		$menu_service->init();
+		$menu_service->init( $common_assets_url );
 	}
 
 	/**
@@ -138,7 +148,7 @@ class FluxPlugins {
 
 		// Initialize compatibility validation system via CompatibilityService.
 		$compatibility_service = CompatibilityService::get_instance();
-		$compatibility_service->init_plugin( $this->plugin_slug, $this->plugin_version );
+		$compatibility_service->init_plugin( $this->plugin_slug, $this->plugin_version, $this->common_assets_url );
 		
 		// Logger is already initialized in init() method above.
 	}
