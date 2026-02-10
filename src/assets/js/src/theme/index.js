@@ -162,7 +162,6 @@ const theme = createTheme({
           // Ensure typography uses theme defaults, not WordPress admin styles
           fontSize: 'inherit',
           lineHeight: 'inherit',
-          margin: 0,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
         },
       },
