@@ -38,10 +38,10 @@ const FluxAppProvider = ({ children }) => {
           
           /* Typography fixes - WordPress admin often sets small font-sizes */
           /* Use px values to avoid rem/em calculation conflicts with WordPress */
+          /* Note: Do not set margin here - it would override component sx/style margins */
           .MuiTypography-root {
             font-size: inherit !important;
             line-height: inherit !important;
-            margin: 0 !important;
           }
           
           .MuiTypography-h1 {
