@@ -41,7 +41,7 @@ This approach leverages WordPress's built-in hook system as the shared service l
 **All hooks MUST follow the WordPress standard pattern:** `{plugin_namespace}/{class_name}/{method_name}` with an optional `/{operation}` suffix for more refined callbacks. This makes hooks traceable to the class and method that fires them, improving code discoverability and maintainability.
 
 **Pattern Structure:**
-- **Plugin Namespace**: The plugin's slug in snake_case (e.g., `flux_suite` for common library, `flux_ai_alt_creator` for AI Media Alt Creator plugin, `flux_media_optimizer` for Media Optimizer plugin).
+- **Plugin Namespace**: The plugin's slug in snake_case (e.g., `flux_suite` for common library, `flux_ai_alt_creator` for Alt Text & Accessibility Audit plugin, `flux_media_optimizer` for Media Optimizer plugin).
 - **Class Name**: The class name in snake_case (e.g., `MenuService` → `menu_service`, `AltTextProvider` → `alt_text_provider`).
 - **Method Name**: The method name in snake_case (e.g., `generate_alt_text`, `register_routes`).
 - **Operation (Optional)**: A specific operation or state within the method (e.g., `before`, `after`, `batch_size`).

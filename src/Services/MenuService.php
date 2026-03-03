@@ -527,22 +527,22 @@ class MenuService {
 			'dashicons-admin-generic'
 		);
 
-		// Flux AI Media Alt Creator
+		// Flux AI Alt Text & Accessibility Audit
 		$this->add_plugin_to_registry(
 			'flux-ai-media-alt-creator',
-			__( 'AI Media Alt Creator', I18n::domain() ),
-			__( 'Automatically generate AI-powered alt text for media files using OpenAI.', I18n::domain() ),
+			__( 'Alt Text & Accessibility Audit', I18n::domain() ),
+			__( 'Generate AI-powered alt text, audit accessibility compliance, and bulk-fix your media library.', I18n::domain() ),
 			'flux-ai-media-alt-creator/flux-ai-media-alt-creator.php',
 			'admin.php?page=flux-ai-media-alt-creator',
 			'https://fluxplugins.com/ai-media-alt-creator',
 			'dashicons-admin-media'
 		);
 
-		// Flux AI Media Alt Creator Pro
+		// Flux AI Alt Text & Accessibility Audit Pro
 		$this->add_plugin_to_registry(
 			'flux-ai-media-alt-creator-pro',
-			__( 'AI Media Alt Creator Pro', I18n::domain() ),
-			__( 'Professional AI-powered alt text generation with automation and bulk processing. Requires Flux AI Media Alt Creator free plugin.', I18n::domain() ),
+			__( 'Alt Text & Accessibility Audit Pro', I18n::domain() ),
+			__( 'Professional AI-powered alt text generation with automation and bulk processing. Requires Flux AI Alt Text & Accessibility Audit (free plugin).', I18n::domain() ),
 			'flux-ai-media-alt-creator-pro/flux-ai-media-alt-creator-pro.php',
 			'admin.php?page=flux-ai-media-alt-creator',
 			'https://fluxplugins.com/ai-media-alt-creator-pro',
