@@ -9,6 +9,7 @@
 namespace FluxPlugins\Common\Logger;
 
 use Monolog\Handler\AbstractProcessingHandler;
+use Monolog\LogRecord;
 
 /**
  * Database handler for storing logs in WordPress database.
@@ -53,9 +54,9 @@ class DatabaseHandler extends AbstractProcessingHandler {
 	 * Write the log record to the database.
 	 *
 	 * @since 1.0.0
-	 * @param array $record The log record to write.
+	 * @param LogRecord $record The log record to write.
 	 */
-	protected function write( array $record ): void {
+	protected function write( LogRecord $record ): void {
 		global $wpdb;
 
 		// Check if logging is disabled via common library option
@@ -68,10 +69,10 @@ class DatabaseHandler extends AbstractProcessingHandler {
 			$this->table_name,
 			[
 				'plugin_slug' => $this->plugin_slug,
-				'level'       => $record['level_name'],
-				'message'     => $record['message'],
-				'context'     => ! empty( $record['context'] ) ? wp_json_encode( $record['context'] ) : null,
-				'created_at'  => $record['datetime']->format( 'Y-m-d H:i:s' ),
+				'level'       => $record->level->getName(),
+				'message'     => $record->message,
+				'context'     => ! empty( $record->context ) ? wp_json_encode( $record->context ) : null,
+				'created_at'  => $record->datetime->format( 'Y-m-d H:i:s' ),
 			],
 			[
 				'%s',
