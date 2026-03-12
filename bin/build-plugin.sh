@@ -497,6 +497,7 @@ rsync -av \
     --exclude='package.json' \
     --exclude='package-lock.json' \
     --exclude='webpack.config.js' \
+    --exclude='.env*' \
     --exclude='.DS_Store' \
     --exclude='Thumbs.db' \
     --exclude='*.phar' \
