@@ -192,7 +192,7 @@ const theme = createTheme({
         },
         input: {
           fontSize: '16px', // Use px to avoid rem/em conflicts
-          lineHeight: 1.5,
+          lineHeight: '1.5 !important',
           height: 'auto',
           padding: '16.5px 14px',
           boxSizing: 'border-box',
