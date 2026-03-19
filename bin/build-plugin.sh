@@ -453,13 +453,62 @@ if [ ! -d "$TRUNK_DIR" ]; then
     mkdir -p "$TRUNK_DIR"
 fi
 
-# Install production-only dependencies
-echo "🔧 Installing production-only dependencies..."
-composer install --ignore-platform-reqs --no-dev --optimize-autoloader --no-interaction
+# Optional toolchains: simple plugins may have neither Composer nor npm
+COMPOSER_JSON="$PLUGIN_DIR/composer.json"
+HAS_COMPOSER_JSON=false
+HAS_COMPOSER_CMD=false
+HAS_PACKAGE_JSON=false
+HAS_NPM_CMD=false
+[ -f "$COMPOSER_JSON" ] && HAS_COMPOSER_JSON=true
+command -v composer &>/dev/null && HAS_COMPOSER_CMD=true
+[ -f "$PLUGIN_DIR/package.json" ] && HAS_PACKAGE_JSON=true
+command -v npm &>/dev/null && HAS_NPM_CMD=true
 
-# Build frontend assets
-echo "🏗️ Building frontend assets..."
-npm run build
+COMPOSER_PROFILE="skip"
+if [ "$HAS_COMPOSER_JSON" = true ] && [ "$HAS_COMPOSER_CMD" = true ]; then
+    COMPOSER_PROFILE="prod install + dev restore"
+elif [ "$HAS_COMPOSER_JSON" != true ]; then
+    COMPOSER_PROFILE="skip (no composer.json)"
+elif [ "$HAS_COMPOSER_CMD" != true ]; then
+    COMPOSER_PROFILE="skip (composer not on PATH)"
+fi
+
+ASSETS_PROFILE="skip"
+if [ "$HAS_PACKAGE_JSON" = true ] && [ "$HAS_NPM_CMD" = true ]; then
+    ASSETS_PROFILE="npm run build"
+elif [ "$HAS_PACKAGE_JSON" = true ] && [ "$HAS_NPM_CMD" != true ]; then
+    ASSETS_PROFILE="skip (npm not on PATH; ship prebuilt assets if any)"
+else
+    ASSETS_PROFILE="skip (no package.json)"
+fi
+
+echo ""
+echo "📌 Build profile:"
+echo "   Composer: $COMPOSER_PROFILE"
+echo "   Assets:   $ASSETS_PROFILE"
+echo ""
+
+if [ "$HAS_COMPOSER_JSON" = true ] && [ "$HAS_COMPOSER_CMD" = true ]; then
+    echo "🔧 Installing production-only Composer dependencies..."
+    composer install --ignore-platform-reqs --no-dev --optimize-autoloader --no-interaction
+else
+    if [ "$HAS_COMPOSER_JSON" = true ]; then
+        echo "ℹ️  Skipping Composer (install composer or add to PATH to run prod install)."
+    else
+        echo "ℹ️  Skipping Composer (no composer.json)."
+    fi
+fi
+
+if [ "$HAS_PACKAGE_JSON" = true ] && [ "$HAS_NPM_CMD" = true ]; then
+    echo "🏗️ Building frontend assets (npm run build)..."
+    npm run build
+else
+    if [ "$HAS_PACKAGE_JSON" = true ]; then
+        echo "⚠️  Skipping npm build: npm not on PATH. Package zip will use existing built files only."
+    else
+        echo "ℹ️  Skipping npm (no package.json)."
+    fi
+fi
 
 # Build directly into wporg/trunk/ (SVN trunk)
 echo ""
@@ -524,9 +573,12 @@ rm -rf "$TEMP_ZIP_DIR"
 # Return to plugin directory for cleanup
 cd "$PLUGIN_DIR"
 
-# Restore full development environment
-echo "🔄 Restoring development environment..."
-composer install --ignore-platform-reqs --optimize-autoloader --no-interaction
+if [ "$HAS_COMPOSER_JSON" = true ] && [ "$HAS_COMPOSER_CMD" = true ]; then
+    echo "🔄 Restoring development Composer environment..."
+    composer install --ignore-platform-reqs --optimize-autoloader --no-interaction
+else
+    echo "ℹ️  Skipping Composer dev restore (no composer.json or composer not on PATH)."
+fi
 
 # Calculate sizes
 ZIP_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
