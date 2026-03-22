@@ -9,7 +9,6 @@
 namespace FluxPlugins\Common\Logger;
 
 use Monolog\Handler\AbstractProcessingHandler;
-use Monolog\LogRecord;
 
 /**
  * Database handler for storing logs in WordPress database.
@@ -53,10 +52,13 @@ class DatabaseHandler extends AbstractProcessingHandler {
 	/**
 	 * Write the log record to the database.
 	 *
+	 * Monolog 2 passes the standard handler record array (message, context, level, level_name, channel, datetime, extra).
+	 *
 	 * @since 1.0.0
-	 * @param LogRecord $record The log record to write.
+	 * @since 1.0.1 Monolog 2 compatibility: `write( array $record )` instead of Monolog 3 `LogRecord`.
+	 * @param array $record Log record.
 	 */
-	protected function write( LogRecord $record ): void {
+	protected function write( array $record ): void {
 		global $wpdb;
 
 		// Check if logging is disabled via common library option
@@ -65,14 +67,25 @@ class DatabaseHandler extends AbstractProcessingHandler {
 			return;
 		}
 
+		$context = isset( $record['context'] ) && is_array( $record['context'] ) ? $record['context'] : [];
+
+		$created_at = null;
+		if ( isset( $record['datetime'] ) && $record['datetime'] instanceof \DateTimeInterface ) {
+			$created_at = $record['datetime']->format( 'Y-m-d H:i:s' );
+		} else {
+			$created_at = function_exists( 'current_time' )
+				? current_time( 'mysql' )
+				: gmdate( 'Y-m-d H:i:s' );
+		}
+
 		$wpdb->insert(
 			$this->table_name,
 			[
 				'plugin_slug' => $this->plugin_slug,
-				'level'       => $record->level->getName(),
-				'message'     => $record->message,
-				'context'     => ! empty( $record->context ) ? wp_json_encode( $record->context ) : null,
-				'created_at'  => $record->datetime->format( 'Y-m-d H:i:s' ),
+				'level'       => isset( $record['level_name'] ) ? (string) $record['level_name'] : '',
+				'message'     => isset( $record['message'] ) ? (string) $record['message'] : '',
+				'context'     => ! empty( $context ) ? wp_json_encode( $context ) : null,
+				'created_at'  => $created_at,
 			],
 			[
 				'%s',
