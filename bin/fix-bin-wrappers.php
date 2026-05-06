@@ -3,6 +3,9 @@
 /**
  * Fix Composer bin wrapper paths and execute permissions for Strauss-prefixed packages.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * Composer generates bin wrappers that point to vendor/stratease/flux-plugins-common/bin,
  * but because of Strauss, the actual scripts are in vendor-prefixed/stratease/flux-plugins-common/bin.
  * This script:
@@ -11,6 +14,7 @@
  *
  * @package FluxPlugins\Common\Bin
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 // Get the plugin root directory (where composer.json is located).

@@ -1,6 +1,11 @@
 /**
  * License API service for Flux Plugins Common
  * Works with the shared license REST API endpoints
+ *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 import apiFetch from '@wordpress/api-fetch';

@@ -1,11 +1,15 @@
 /**
  * Compatibility notice dismiss handler.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * Handles dismissing compatibility notices via AJAX.
  * Works with all plugins using the shared compatibility system.
  *
  * @package FluxPlugins\Common
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 (function($) {

@@ -1,0 +1,35 @@
+# Rsync exclude patterns for WordPress.org distribution copies.
+# Used by build-plugin.sh and verify-plugin-distribution.sh (single source of truth).
+# Syntax: same as rsync --exclude (see rsync(1)).
+
+bin
+vendor/stratease/*/bin
+vendor-prefixed/stratease/*/bin
+scripts
+node_modules
+.git
+.github
+.vscode
+tests
+.htaccess
+.git*
+.phpunit*
+*.zip
+*.log
+*.xml
+*.lock
+*.sql
+.gitignore
+package.json
+package-lock.json
+webpack.config.js
+.env*
+.DS_Store
+Thumbs.db
+*.phar
+*.map
+phpunit.xml
+phpunit.xml.dist
+audit-*.md
+vendor-prefixed/plugins
+wporg

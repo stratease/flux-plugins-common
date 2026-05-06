@@ -2,11 +2,15 @@
 /**
  * Compatibility validation service for Flux Plugins suite.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * Validates compatibility between WordPress plugins and the remote Flux Plugins API service.
  * This is independent of license validation and focuses solely on version compatibility.
  *
  * @package FluxPlugins\Common\Compatibility
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 namespace FluxPlugins\Common\Compatibility;

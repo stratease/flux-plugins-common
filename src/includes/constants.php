@@ -3,6 +3,9 @@
 /**
  * Constants for Flux Plugins Common library.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * Constants are defined in the global namespace (outside any namespace declaration)
  * so they can be accessed from anywhere in WordPress.
  *
@@ -24,6 +27,7 @@
  *
  * @package \FluxPlugins\Common
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 // Constants must be defined in global namespace.
 if (!defined('FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_URL')) {

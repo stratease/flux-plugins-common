@@ -2,8 +2,12 @@
 /**
  * License service for managing shared license key across all Flux Plugins.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * @package FluxPlugins\Common\License
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 namespace FluxPlugins\Common\License;

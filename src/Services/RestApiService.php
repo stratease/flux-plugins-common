@@ -2,8 +2,12 @@
 /**
  * REST API service for WordPress REST API route registration.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * @package FluxPlugins\Common\Services
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 namespace FluxPlugins\Common\Services;

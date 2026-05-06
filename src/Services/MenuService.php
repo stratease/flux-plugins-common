@@ -2,8 +2,12 @@
 /**
  * Menu service for WordPress admin menu registration.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * @package FluxPlugins\Common\Services
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 namespace FluxPlugins\Common\Services;
@@ -547,6 +551,17 @@ class MenuService {
 			'admin.php?page=flux-ai-media-alt-creator',
 			'https://fluxplugins.com/ai-media-alt-creator-pro',
 			'dashicons-admin-media'
+		);
+
+		// Flux One - Command Central
+		$this->add_plugin_to_registry(
+			'flux-one',
+			__( 'Flux One', I18n::domain() ),
+			__( 'Command-driven control panel for WordPress admin (command palette, dashboard widget, operational actions).', I18n::domain() ),
+			'flux-one/flux-one.php',
+			'admin.php?page=flux-one',
+			'https://fluxplugins.com/flux-one',
+			'dashicons-editor-kitchensink'
 		);
 
 

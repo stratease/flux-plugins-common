@@ -2,11 +2,15 @@
 /**
  * External API client for Flux Plugins suite.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * Shared API client for license validation, activation, and compatibility checks.
  * Plugin-specific endpoints (with namespace like 'fmo') remain as wrapper methods.
  *
  * @package FluxPlugins\Common\Api
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 namespace FluxPlugins\Common\Api;

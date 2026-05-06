@@ -2,10 +2,14 @@
 /**
  * Individual compatibility response item.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * Represents a single compatibility response within the API response.
  *
  * @package FluxPlugins\Common\Compatibility
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 namespace FluxPlugins\Common\Compatibility;

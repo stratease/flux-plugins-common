@@ -525,35 +525,15 @@ else
     find "$TRUNK_DIR" -mindepth 1 -delete 2>/dev/null || true
 fi
 
-# Copy files to trunk with exclusions (single set of exclusions)
+# Copy files to trunk with exclusions (single set of exclusions).
+# Patterns: plugin-dist-rsync-excludes.txt (shared with verify-plugin-distribution.sh).
 echo "📋 Copying plugin files to trunk (excluding development files)..."
-rsync -av \
-    --exclude='bin' \
-    --exclude='vendor/stratease/*/bin' \
-    --exclude='vendor-prefixed/stratease/*/bin' \
-    --exclude='node_modules' \
-    --exclude='.git' \
-    --exclude='.vscode' \
-    --exclude='tests' \
-    --exclude='.htaccess' \
-    --exclude='.git*' \
-    --exclude='.phpunit*' \
-    --exclude='*.zip' \
-    --exclude='*.log' \
-    --exclude='*.xml' \
-    --exclude='*.lock' \
-    --exclude='.gitignore' \
-    --exclude='package.json' \
-    --exclude='package-lock.json' \
-    --exclude='webpack.config.js' \
-    --exclude='.env*' \
-    --exclude='.DS_Store' \
-    --exclude='Thumbs.db' \
-    --exclude='*.phar' \
-    --exclude='phpunit.xml' \
-    --exclude='vendor-prefixed/plugins' \
-    --exclude='wporg' \
-    "$PLUGIN_DIR/" "$TRUNK_DIR/"
+RSYNC_EXCLUDES_FILE="$SCRIPT_DIR/plugin-dist-rsync-excludes.txt"
+if [ ! -f "$RSYNC_EXCLUDES_FILE" ]; then
+    echo "❌ Error: Missing $RSYNC_EXCLUDES_FILE"
+    exit 1
+fi
+rsync -av --exclude-from="$RSYNC_EXCLUDES_FILE" "$PLUGIN_DIR/" "$TRUNK_DIR/"
 
 # Create zip file FROM trunk (ensures zip matches trunk exactly)
 # Only exclude .svn since all other files were already filtered by rsync

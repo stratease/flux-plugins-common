@@ -2,6 +2,19 @@
 
 Shared library for the Flux Plugins suite providing common services, React components, and infrastructure.
 
+## Important: Externally Managed Source
+
+This repository (`stratease/flux-plugins-common`) is the **single source of truth** for common library code.
+
+- Consuming plugins install this library via Composer and then **Strauss namespace-prefix** it into `vendor-prefixed/`.
+- Do **not** edit the copied/prefixed files inside individual plugin repositories. Those changes will be overwritten on the next Composer/Strauss run.
+  - Edit source here, then update consuming plugin dependency.
+
+### Reference Implementation (Flux Media Optimizer)
+
+- Plugin bootstrap example: `wp-content/plugins/flux-media-optimizer/flux-media-optimizer.php`
+- Composer + Strauss setup example: `wp-content/plugins/flux-media-optimizer/composer.json`
+
 ## Overview
 
 This library provides reusable components for all Flux Plugins, including:
@@ -126,6 +139,28 @@ Add this repository as a VCS dependency in your plugin's `composer.json`:
 
 Then run `composer install`.
 
+## WordPress.org packaging and bundled library
+
+Plugins that ship this library (via Composer and Strauss into `vendor-prefixed/`) must keep **release artifacts** aligned with [WordPress.org plugin guidelines](https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/).
+
+**Distribution copy:** Shared build tooling lives in this repo:
+
+- [`bin/build-plugin.sh`](bin/build-plugin.sh) — rsync from the plugin working tree into `wporg/trunk/` (or a temp tree) for zips and SVN.
+- [`bin/plugin-dist-rsync-excludes.txt`](bin/plugin-dist-rsync-excludes.txt) — **single source of truth** for rsync `--exclude` patterns (dev dependencies, tests, maps, PHPUnit files, `audit-*.md`, etc.). Edit this file when a new dev-only path must never ship.
+- [`bin/verify-plugin-distribution.sh`](bin/verify-plugin-distribution.sh) — optional gate: performs the same filtered copy to a temp directory and fails if `phpunit.xml.dist` or `audit-*.md` appear under the simulated distribution tree.
+
+Run the verifier from a plugin root (example):
+
+```bash
+/path/to/flux-plugins-common/bin/verify-plugin-distribution.sh /path/to/your-plugin
+```
+
+**Guideline checklist (high level, not legal advice):**
+
+- Declare **GPL-2.0-or-later** (or compatible) for the **whole** plugin, including prefixed vendor code, in the plugin header and `readme.txt`.
+- Document **external services** (API endpoints, data sent) accurately in `readme.txt` if the shipped code calls out to third-party or first-party hosted services.
+- Do not ship **development-only** files (tests, source maps, audit notes, local tooling) in the WordPress.org zip; rely on `plugin-dist-rsync-excludes.txt` and the verifier before tagging a release.
+
 ## Building Assets
 
 The shared library includes JavaScript assets that need to be built:
@@ -153,7 +188,7 @@ The common library requires a URL path to the plugin's common assets folder. Thi
 **Initialization:**
 
 ```php
-use FluxPlugins\Common\FluxPlugins;
+use YourPlugin\FluxPlugins\Common\FluxPlugins;
 
 // Initialize with common assets URL
 FluxPlugins::init(
@@ -217,7 +252,7 @@ If no common assets URL is provided during initialization, the library will fall
 In your plugin's main file, initialize the common library:
 
 ```php
-use FluxPlugins\Common\FluxPlugins;
+use YourPlugin\FluxPlugins\Common\FluxPlugins;
 
 // Initialize the common library with common assets URL
 FluxPlugins::init(
@@ -428,11 +463,16 @@ class Plugin {
      */
     public function render_main_page() {
         ?>
-        <div id="your-plugin-app"></div>
+        <div class="wrap">
+            <span class="wp-header-end"></span>
+            <div id="your-plugin-app"></div>
+        </div>
         <?php
     }
 }
 ```
+
+**Admin notices and `.wrap`:** Always render a `<div class="wrap">` for submenu callbacks that load a full admin screen, and put **`<span class="wp-header-end"></span>` immediately before** your React (or other) mount element. WordPress core uses that sentinel when relocating admin notices; omitting it causes notices (including Flux Suite license messages) to anchor against the first heading inside your app and appear **inside** the React layout instead of above it.
 
 #### 3. Register REST API Routes
 

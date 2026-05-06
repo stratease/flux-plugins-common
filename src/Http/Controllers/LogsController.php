@@ -2,8 +2,12 @@
 /**
  * Logs REST API controller for Flux Plugins Common.
  *
+ * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
+ * Do not edit copies inside consuming plugins (including Strauss-prefixed `vendor-prefixed/`).
+ *
  * @package FluxPlugins\Common\Http\Controllers
  * @since 1.0.0
+ * @since 1.0.0 Added externally managed source notice.
  */
 
 namespace FluxPlugins\Common\Http\Controllers;
