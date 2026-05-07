@@ -6,7 +6,6 @@ bin
 vendor/stratease/*/bin
 vendor-prefixed/stratease/*/bin
 scripts
-src
 node_modules
 .eslintignore
 .eslintrc.cjs
