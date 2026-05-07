@@ -6,7 +6,10 @@ bin
 vendor/stratease/*/bin
 vendor-prefixed/stratease/*/bin
 scripts
+src
 node_modules
+.eslintignore
+.eslintrc.cjs
 .git
 .github
 .vscode
@@ -23,6 +26,8 @@ tests
 package.json
 package-lock.json
 webpack.config.js
+tsconfig.json
+vitest.config.ts
 .env*
 .DS_Store
 Thumbs.db
