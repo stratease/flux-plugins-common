@@ -161,8 +161,8 @@ Common library should avoid plugin-specific business logic.
 | `LicenseService` | `License\` | Singleton | Shared license key management (site option), 24h auto-revalidation |
 | `AccountIdService` | `Account\` | Singleton | UUID v4 account ID generation and storage (site option) |
 | `ExternalApiClient` | `Api\` | Instance | HTTP client for `api.fluxplugins.com` (license, compatibility, generic CRUD) |
-| `Logger` | `Logger\` | Singleton | PSR-3 logger wrapping Monolog 2 |
-| `DatabaseHandler` | `Logger\` | Instance | Monolog handler that writes to `{prefix}flux_plugins_logs` table |
+| `Logger` | `Logger\` | Singleton | Suite logger: wpdb log table + `error_log()` for ERROR+ (PSR-3–like methods, not `LoggerInterface`) |
+| `DatabaseHandler` | `Logger\` | Instance | Persists rows to `{prefix}flux_plugins_logs` table |
 | `LicenseController` | `Http\Controllers\` | Instance | REST endpoints for license CRUD under `flux-plugins-common/v1` |
 | `LogsController` | `Http\Controllers\` | Instance | REST endpoint for log viewing under `flux-plugins-common/v1` |
 
@@ -646,7 +646,7 @@ Plugins that provide WP-CLI commands should:
 Release artifacts must ensure prefixed dependencies are complete and loadable.
 
 Historical failure class to guard against:
-- Missing runtime class from shared dependency in older zips (e.g., Monolog class load failure).
+- Missing runtime class from shared dependency in older zips (e.g., missing prefixed class after dependency removal).
 
 ### Strauss Configuration
 
@@ -654,7 +654,7 @@ Each plugin's `composer.json` must declare Strauss config in `extra.strauss`:
 
 - **Target**: `vendor-prefixed/`
 - **Namespace prefix**: `{PluginNamespace}\` (e.g., `FluxMedia\`, `FluxAIMediaAltCreator\`)
-- **Packages to prefix**: `stratease/flux-plugins-common` and its transitive deps (`monolog/monolog`, `psr/log`)
+- **Packages to prefix**: `stratease/flux-plugins-common` only (Monolog/psr-log removed; do not list obsolete packages).
 - **Packages to exclude**: `woocommerce/action-scheduler` (uses global functions)
 - **Post-install/update**: Auto-runs `prefix-namespaces` composer script
 

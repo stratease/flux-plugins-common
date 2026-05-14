@@ -11,14 +11,30 @@
         }
     ],
     "require": {
-        "php": ">=7.4",
-        "monolog/monolog": "^2.9",
-        "psr/log": "^1.1 || ^2.0 || ^3.0"
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "automattic/wordbless": "^0.4",
+        "phpunit/phpunit": "^9.6"
     },
     "autoload": {
         "psr-4": {
             "FluxPlugins\\Common\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FluxPlugins\\Common\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "post-install-cmd": [
+            "WorDBless\\Composer\\InstallDropin::copy"
+        ],
+        "post-update-cmd": [
+            "WorDBless\\Composer\\InstallDropin::copy"
+        ]
     },
     "bin": [
         "bin/build-plugin.sh",
@@ -26,6 +42,11 @@
     ],
     "minimum-stability": "dev",
     "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "roots/wordpress-core-installer": true
+        }
+    },
     "archive": {
         "exclude": [
             "node_modules",
@@ -35,7 +56,9 @@
             "package-lock.json",
             "webpack.config.js",
             "webpack.config.base.js",
-            "webpack.config.helpers.js"
+            "webpack.config.helpers.js",
+            "tests",
+            "phpunit.xml.dist"
         ]
     }
 }

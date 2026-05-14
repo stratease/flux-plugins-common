@@ -24,9 +24,27 @@ This library provides reusable components for all Flux Plugins, including:
 - **Compatibility Service** (`CompatibilityService`) - Plugin/API version compatibility validation and notices
 - **Account ID Service** - Shared account UUID management
 - **I18n Service** - Centralized internationalization and text domain management
-- **Logger Service** - Standardized logging with database handler
+- **Logger Service** - Suite logging without Monolog (`$wpdb` log table; `error_log()` for high severity). **Monolog and `psr/log` are deprecated and removed** from this library as of **v1.2.0**; see [Monolog and psr log deprecation and removal](#monolog-and-psr-log-deprecation-and-removal).
 - **External API Client** - Shared API client for license validation and compatibility checks
 - **React Components** - Shared UI components and theme
+
+## Monolog and psr log deprecation and removal
+
+**Status:** Relying on **Monolog** (and on **`psr/log`** only for this library’s logger) is **deprecated** for Flux Plugins Common and **removed** starting with **v1.2.0**.
+
+| Phase | What it means |
+|--------|----------------|
+| **Deprecated** | Older tagged releases may still list `monolog/monolog` and `psr/log` in *this* package’s `composer.json`. Do not add new code that type-hints Monolog classes or treats `Logger` as `Psr\Log\LoggerInterface`; prefer the public `Logger` API only. |
+| **Removed (v1.2.0+)** | This repository’s `composer.json` **no longer requires** Monolog or `psr/log`. The suite **`Logger`** and **`DatabaseHandler`** are implemented with **WordPress `$wpdb`**, **`error_log()`** for high-severity lines, and **no** Monolog pipeline. |
+
+**What integrators must do after upgrading to v1.2.0+**
+
+1. Bump the Composer dependency on `stratease/flux-plugins-common` to a release that includes this change.
+2. Remove **`monolog/monolog`** and **`psr/log`** from your plugin’s own `require` if you only added them because this library used to need them.
+3. Remove both packages from Strauss **`extra.strauss.packages`** when they were listed only for common.
+4. Run **`composer update`** and your **prefix** pipeline (e.g. Strauss) so `vendor-prefixed/` does not ship stale prefixed Monolog code.
+
+**What stays the same:** `FluxPlugins::init()` still initializes **`Logger`** early; **`Logger::get_instance()`** and the level methods (`debug`, `info`, …, `log`) are **unchanged** for callers. See [Using the Logger Service](#4-using-the-logger-service) for usage and implementation details.
 
 ## Important: Namespace Prefixing and State Management
 
@@ -172,6 +190,19 @@ npm run build
 ```
 
 **Important:** The built bundle files (`src/assets/js/dist/*.bundle.js`) **must be committed** to the repository. These files are required when the library is installed via Composer/Strauss, as plugins need access to the pre-built bundles without requiring a build step. Assets are stored in `src/assets/` so Strauss will copy them to the vendor-prefixed location.
+
+## PHP tests (PHPUnit)
+
+Library PHP behavior is covered with **PHPUnit** and [**WorDBless**](https://github.com/Automattic/wordbless) (no MySQL). From this directory:
+
+```bash
+composer install
+composer test
+```
+
+Requires PHP extensions expected by PHPUnit 9 (including **mbstring**). WorDBless installs a `db.php` drop-in via Composer `post-install-cmd` / `post-update-cmd`.
+
+Release notes for integrators: see [CHANGELOG.md](CHANGELOG.md).
 
 For development with watch mode:
 
@@ -513,6 +544,8 @@ class Plugin {
 
 #### 4. Using the Logger Service
 
+**Monolog / `psr/log`:** This library **deprecated** then **removed** any dependency on Monolog and on `psr/log` for logging (see [Monolog and psr log deprecation and removal](#monolog-and-psr-log-deprecation-and-removal)). Call **`Logger` only**; do not depend on Monolog types from this package.
+
 The Logger service is automatically initialized by `FluxPlugins::init()` with your plugin slug. You can access it anywhere in your plugin:
 
 ```php
@@ -546,6 +579,15 @@ class Plugin {
 - `$logger->alert( $message, $context = [] )` - Log alerts
 - `$logger->emergency( $message, $context = [] )` - Log emergencies
 - `$logger->log( $level, $message, $context = [] )` - Log with custom level
+
+**Implementation notes (library 1.2.0+):**
+
+- **Monolog and `psr/log` removed (after deprecation):** The library **no longer** declares or loads Monolog or `psr/log` for suite logging. That reliance is **deprecated** as of the v1.2.0 line and **removed** from Composer and runtime; public `Logger` method names stay the same so existing plugin call sites keep working. Full policy: [Monolog and psr log deprecation and removal](#monolog-and-psr-log-deprecation-and-removal).
+- **Storage:** when site option `flux-plugins_common_options['enable_logging']` is true (default), entries are stored in `{prefix}flux_plugins_logs` via `$wpdb` (same Flux Suite → Logs UI as before). The library does **not** write ad-hoc log files under the plugin directory.
+- **Host log:** levels **`error`**, **`critical`**, **`alert`**, and **`emergency`** also emit one line per event via PHP **`error_log()`** (server/host log). Context JSON in that line is truncated when large; full context remains in the database row when DB logging is enabled.
+- **`Logger` does not implement `Psr\Log\LoggerInterface`.** Method names match common PSR-3 usage; avoid type-hinting `LoggerInterface` against `Logger` unless you provide an adapter.
+- **Consuming plugins:** remove `monolog/monolog` and `psr/log` from your `composer.json` `require` and from Strauss `extra.strauss.packages` if they were only included for this library; run `composer update` and your prefix pipeline. Until you depend on a tagged release that ships this change, keep your previous Composer lines if you still install an older common package.
+- **Local monorepo:** to test unreleased `flux-plugins-common` from a sibling directory, add a Composer **`path`** repository pointing at that clone (see [Composer path repositories](https://getcomposer.org/doc/05-repositories.md#path-repository)), then `composer update stratease/flux-plugins-common`.
 
 **Registering the Logs Page:**
 

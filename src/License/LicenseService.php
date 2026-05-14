@@ -235,37 +235,44 @@ class LicenseService {
 	const AUTO_VALIDATION_LOCK_DURATION = 300;
 
 	/**
+	 * Whether the license is valid from persisted cache only (no remote auto-validation).
+	 *
+	 * Single source of truth for read paths that must not trigger HTTP (admin notice, transient sync).
+	 *
+	 * @since 1.2.0
+	 * @return bool True when a key exists, last_valid_date is set, and within the 24-hour window.
+	 */
+	private function is_cached_license_valid() {
+		return $this->is_license_valid( false );
+	}
+
+	/**
 	 * Check license validity and update notice transient.
 	 *
-	 * Checks if license is valid and manages the transient that controls
-	 * whether the admin notice should be displayed.
-	 *
-	 * - If license is invalid and a key exists: Set transient to show notice
-	 * - If license is valid: Clear transient to hide notice
+	 * Syncs the invalid-notice transient to match {@see is_cached_license_valid()} without calling
+	 * remote auto-validation. Return value matches that cached validity (not `is_license_valid( true )`).
 	 *
 	 * @since 1.0.0
-	 * @return bool True if license is valid, false otherwise.
+	 * @since 1.2.0 Uses cached validity only; aligns transient with SSOT (no surprise remote calls).
+	 * @return bool True when cached license is valid within the 24-hour window.
 	 */
 	public function check_validity_and_update_notice() {
 		$license_key = $this->get_license_key();
-		$is_valid = $this->is_license_valid();
 
-		// If no license key, no notice needed
 		if ( empty( $license_key ) ) {
 			$this->clear_invalid_notice_transient();
 			return false;
 		}
 
-		// Update transient based on validity
-		if ( $is_valid ) {
-			// License is valid - clear the notice transient
+		$cached_valid = $this->is_cached_license_valid();
+
+		if ( $cached_valid ) {
 			$this->clear_invalid_notice_transient();
 		} else {
-			// License is invalid - set transient to show notice
 			$this->set_invalid_notice_transient();
 		}
 
-		return $is_valid;
+		return $cached_valid;
 	}
 
 	/**
@@ -318,15 +325,27 @@ class LicenseService {
 	/**
 	 * Check if license invalid notice should be displayed.
 	 *
+	 * Derived from the same cached rule as feature gating: a key must exist and
+	 * {@see is_cached_license_valid()} must be false. Does not read the invalid-notice transient
+	 * for the decision; that transient remains a write-through mirror updated from API results
+	 * and from {@see check_validity_and_update_notice()}. When cached validity is true, the stale
+	 * transient is cleared so DB state matches.
+	 *
 	 * @since 1.0.0
+	 * @since 1.2.0 SSOT: derive from cached validity + key instead of transient read.
 	 * @return bool True if notice should be shown, false otherwise.
 	 */
 	public function should_show_invalid_notice() {
-		// Only show if transient exists and license key exists
-		$has_transient = get_site_transient( self::TRANSIENT_NAME_LICENSE_INVALID_NOTICE ) !== false;
-		$has_license_key = ! empty( $this->get_license_key() );
+		if ( empty( $this->get_license_key() ) ) {
+			return false;
+		}
 
-		return $has_transient && $has_license_key;
+		if ( $this->is_cached_license_valid() ) {
+			$this->update_notice_transient_from_api_result( true );
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

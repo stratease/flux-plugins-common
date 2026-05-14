@@ -8,29 +8,75 @@
  * @package FluxPlugins\Common\Logger
  * @since 1.0.0
  * @since 1.0.0 Added externally managed source notice.
+ * @since 1.2.0 Removed Monolog and PSR-3 interface; internal persistence plus error_log for high severity.
  */
 
 namespace FluxPlugins\Common\Logger;
 
-use Psr\Log\LoggerInterface;
-
 /**
- * Logger utility class using Monolog with simplified structured logging.
+ * Suite logger: database rows for admin Logs UI plus server error_log for high-severity entries.
  *
- * The plugin slug is set during FluxPlugins::init() via the init() method.
- * All instances (Strauss namespaced) will use the same plugin slug for this request.
+ * Method names match common PSR-3 usage; this class does not implement {@see \Psr\Log\LoggerInterface}.
  *
  * @since 1.0.0
  */
-class Logger implements LoggerInterface {
+class Logger {
 
 	/**
-	 * Monolog logger instance.
+	 * Maximum length for JSON context appended to error_log lines.
 	 *
-	 * @since 1.0.0
-	 * @var \Monolog\Logger
+	 * @since 1.2.0
 	 */
-	private $logger;
+	private const ERROR_LOG_CONTEXT_MAX_BYTES = 1024;
+
+	/**
+	 * Canonical uppercase level names for ordering and validation.
+	 *
+	 * @since 1.2.0
+	 */
+	private const LEVEL_ORDER = [
+		'EMERGENCY' => 800,
+		'ALERT'     => 700,
+		'CRITICAL'  => 600,
+		'ERROR'     => 500,
+		'WARNING'   => 400,
+		'NOTICE'    => 300,
+		'INFO'      => 200,
+		'DEBUG'     => 100,
+	];
+
+	/**
+	 * Levels echoed to PHP error_log (host log), not file.
+	 *
+	 * @since 1.2.0
+	 * @var string[]
+	 */
+	private const ERROR_LOG_LEVELS = [ 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY' ];
+
+	/**
+	 * Legacy Monolog 2 level integers for {@see log()} callers.
+	 *
+	 * @since 1.2.0
+	 * @var array<int, string>
+	 */
+	private const MONOLOG_INT_TO_NAME = [
+		100 => 'DEBUG',
+		200 => 'INFO',
+		250 => 'NOTICE',
+		300 => 'WARNING',
+		400 => 'ERROR',
+		500 => 'CRITICAL',
+		550 => 'ALERT',
+		600 => 'EMERGENCY',
+	];
+
+	/**
+	 * Lazy database writer; null until first persisted row while logging enabled.
+	 *
+	 * @since 1.2.0
+	 * @var DatabaseHandler|null
+	 */
+	private $db_handler;
 
 	/**
 	 * Plugin slug for this logger instance.
@@ -57,6 +103,28 @@ class Logger implements LoggerInterface {
 	private static $static_plugin_slug = 'flux-plugins-common';
 
 	/**
+	 * Optional sink for error_log-style output (PHPUnit).
+	 *
+	 * @since 1.2.0
+	 * @var callable|null
+	 */
+	private static $error_log_sink = null;
+
+	/**
+	 * Replace PHP error_log for tests; pass null to restore default behavior.
+	 *
+	 * For automated tests only; do not use in production plugins.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param callable|null $sink Receives a single string line.
+	 * @return void
+	 */
+	public static function set_error_log_sink_for_tests( ?callable $sink ): void {
+		self::$error_log_sink = $sink;
+	}
+
+	/**
 	 * Initialize logger with plugin slug.
 	 *
 	 * Called by FluxPlugins::init() to initialize the logger with the plugin slug.
@@ -68,22 +136,16 @@ class Logger implements LoggerInterface {
 	 */
 	public static function init( $plugin_slug ) {
 		self::$static_plugin_slug = $plugin_slug;
-		// Initialize instance if not already created
 		if ( self::$instance === null ) {
 			self::$instance = new self();
 		} else {
-			// If instance exists but slug changed, update it
 			self::$instance->plugin_slug = $plugin_slug;
-			// Reinitialize handlers with new slug
-			self::$instance->logger = new \Monolog\Logger( $plugin_slug );
-			self::$instance->setup_handlers();
+			self::$instance->db_handler   = null;
 		}
 	}
 
 	/**
 	 * Get singleton instance.
-	 *
-	 * Uses the plugin slug set via init() during FluxPlugins::init().
 	 *
 	 * @since 1.0.0
 	 * @return Logger Logger instance.
@@ -102,28 +164,116 @@ class Logger implements LoggerInterface {
 	 */
 	private function __construct() {
 		$this->plugin_slug = self::$static_plugin_slug;
-		$this->logger = new \Monolog\Logger( $this->plugin_slug );
-		$this->setup_handlers();
+		$this->db_handler    = null;
 	}
 
 	/**
-	 * Setup log handlers.
+	 * Whether suite database logging is enabled.
 	 *
-	 * @since 1.0.0
+	 * @since 1.2.0
+	 * @return bool
 	 */
-	private function setup_handlers() {
-		// Check if logging is disabled via common library option
+	private function is_site_logging_enabled() {
 		$options = get_site_option( 'flux-plugins_common_options', [] );
-		$logging_enabled = $options['enable_logging'] ?? true;
-		
-		if ( ! $logging_enabled ) {
-			// If logging is disabled, don't add any handlers
+
+		return (bool) ( $options['enable_logging'] ?? true );
+	}
+
+	/**
+	 * @since 1.2.0
+	 * @return DatabaseHandler
+	 */
+	private function get_db_handler() {
+		if ( $this->db_handler === null ) {
+			$this->db_handler = new DatabaseHandler( $this->plugin_slug );
+		}
+
+		return $this->db_handler;
+	}
+
+	/**
+	 * @since 1.2.0
+	 * @param string               $level_name Uppercase level name.
+	 * @param string               $message    Message.
+	 * @param array                $context    Context.
+	 * @param \DateTimeInterface|null $datetime Optional.
+	 * @return void
+	 */
+	private function dispatch( $level_name, $message, array $context, $datetime = null ) {
+		$level_name = strtoupper( (string) $level_name );
+		if ( ! isset( self::LEVEL_ORDER[ $level_name ] ) ) {
+			$level_name = 'INFO';
+		}
+
+		$this->maybe_error_log( $level_name, (string) $message, $context );
+
+		if ( ! $this->is_site_logging_enabled() ) {
 			return;
 		}
 
-		// Database handler for all log levels (DEBUG and above)
-		$database_handler = new DatabaseHandler( $this->plugin_slug, \Monolog\Logger::DEBUG );
-		$this->logger->pushHandler( $database_handler );
+		$this->get_db_handler()->persist( $level_name, (string) $message, $context, $datetime );
+	}
+
+	/**
+	 * @since 1.2.0
+	 * @param string $level_name Uppercase PSR-like level.
+	 * @param string $message    Message.
+	 * @param array  $context    Context.
+	 * @return void
+	 */
+	private function maybe_error_log( $level_name, $message, array $context ) {
+		if ( ! in_array( $level_name, self::ERROR_LOG_LEVELS, true ) ) {
+			return;
+		}
+
+		$line = sprintf( '[%s][%s] %s', $this->plugin_slug, $level_name, $message );
+		if ( ! empty( $context ) ) {
+			$ctx = wp_json_encode( $context );
+			if ( false === $ctx ) {
+				$ctx = '{}';
+			}
+			if ( strlen( $ctx ) > self::ERROR_LOG_CONTEXT_MAX_BYTES ) {
+				$ctx = substr( $ctx, 0, self::ERROR_LOG_CONTEXT_MAX_BYTES - 3 ) . '...';
+			}
+			$line .= ' ' . $ctx;
+		}
+
+		if ( self::$error_log_sink !== null ) {
+			( self::$error_log_sink )( $line );
+
+			return;
+		}
+
+		error_log( $line );
+	}
+
+	/**
+	 * Normalize arbitrary level input (PSR-3 names or legacy Monolog integers).
+	 *
+	 * @since 1.2.0
+	 * @param mixed $level Level.
+	 * @return string Uppercase level name.
+	 */
+	private function normalize_level_name( $level ) {
+		if ( is_int( $level ) || ( is_string( $level ) && ctype_digit( (string) $level ) ) ) {
+			$int_level = (int) $level;
+			if ( isset( self::MONOLOG_INT_TO_NAME[ $int_level ] ) ) {
+				return self::MONOLOG_INT_TO_NAME[ $int_level ];
+			}
+
+			return 'INFO';
+		}
+
+		if ( ! is_string( $level ) ) {
+			return 'INFO';
+		}
+
+		$name = strtoupper( $level );
+		if ( isset( self::LEVEL_ORDER[ $name ] ) ) {
+			return $name;
+		}
+
+		return 'INFO';
 	}
 
 	/**
@@ -135,7 +285,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function debug( $message, array $context = [] ): void {
-		$this->logger->debug( $message, $context );
+		$this->dispatch( 'DEBUG', $message, $context );
 	}
 
 	/**
@@ -147,7 +297,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function info( $message, array $context = [] ): void {
-		$this->logger->info( $message, $context );
+		$this->dispatch( 'INFO', $message, $context );
 	}
 
 	/**
@@ -159,7 +309,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function notice( $message, array $context = [] ): void {
-		$this->logger->notice( $message, $context );
+		$this->dispatch( 'NOTICE', $message, $context );
 	}
 
 	/**
@@ -171,7 +321,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function warning( $message, array $context = [] ): void {
-		$this->logger->warning( $message, $context );
+		$this->dispatch( 'WARNING', $message, $context );
 	}
 
 	/**
@@ -183,7 +333,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function error( $message, array $context = [] ): void {
-		$this->logger->error( $message, $context );
+		$this->dispatch( 'ERROR', $message, $context );
 	}
 
 	/**
@@ -195,7 +345,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function critical( $message, array $context = [] ): void {
-		$this->logger->critical( $message, $context );
+		$this->dispatch( 'CRITICAL', $message, $context );
 	}
 
 	/**
@@ -207,7 +357,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function alert( $message, array $context = [] ): void {
-		$this->logger->alert( $message, $context );
+		$this->dispatch( 'ALERT', $message, $context );
 	}
 
 	/**
@@ -219,7 +369,7 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function emergency( $message, array $context = [] ): void {
-		$this->logger->emergency( $message, $context );
+		$this->dispatch( 'EMERGENCY', $message, $context );
 	}
 
 	/**
@@ -232,6 +382,6 @@ class Logger implements LoggerInterface {
 	 * @return void
 	 */
 	public function log( $level, $message, array $context = [] ): void {
-		$this->logger->log( $level, $message, $context );
+		$this->dispatch( $this->normalize_level_name( $level ), $message, $context );
 	}
 }

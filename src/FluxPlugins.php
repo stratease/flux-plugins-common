@@ -194,10 +194,10 @@ class FluxPlugins {
 	/**
 	 * Display admin notice for invalid license key.
 	 *
-	 * Checks if the license invalid notice transient exists and displays
-	 * a notice if the license is invalid.
+	 * Uses {@see LicenseService::should_show_invalid_notice()} (cached validity + key; SSOT in LicenseService).
 	 *
 	 * @since 1.0.0
+	 * @since 1.2.0 Docblock aligned with SSOT notice derivation (not transient-only).
 	 * @return void
 	 */
 	public function display_license_validation_notice() {
