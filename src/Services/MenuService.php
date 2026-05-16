@@ -862,13 +862,12 @@ class MenuService {
 			true
 		);
 
-		// Localize script with WordPress data
-		wp_localize_script( 'flux-plugins-common-license-page', 'fluxPluginsCommon', [
-			'apiUrl' => rest_url( 'flux-plugins-common/v1/' ),
-			'nonce' => wp_create_nonce( 'wp_rest' ),
-			'adminUrl' => admin_url(),
-			'userEmail' => $user_email,
-		] );
+		$this->localize_and_translate_script(
+			'flux-plugins-common-license-page',
+			[
+				'userEmail' => $user_email,
+			]
+		);
 	}
 
 	/**
@@ -983,12 +982,35 @@ class MenuService {
 			true
 		);
 
-		// Localize script with WordPress data
-		wp_localize_script( 'flux-plugins-common-logs-page', 'fluxPluginsCommon', [
-			'apiUrl' => rest_url( 'flux-plugins-common/v1/' ),
-			'nonce' => wp_create_nonce( 'wp_rest' ),
-			'adminUrl' => admin_url(),
-		] );
+		$this->localize_and_translate_script( 'flux-plugins-common-logs-page' );
+	}
+
+	/**
+	 * Localize common admin scripts and register script translations for the host text domain.
+	 *
+	 * @since 1.2.0
+	 * @param string $handle Script handle.
+	 * @param array  $extra  Additional keys merged into fluxPluginsCommon.
+	 * @return void
+	 */
+	private function localize_and_translate_script( $handle, array $extra = [] ) {
+		wp_localize_script(
+			$handle,
+			'fluxPluginsCommon',
+			array_merge(
+				[
+					'apiUrl'   => rest_url( 'flux-plugins-common/v1/' ),
+					'nonce'    => wp_create_nonce( 'wp_rest' ),
+					'adminUrl' => admin_url(),
+				],
+				$extra
+			)
+		);
+
+		$languages_path = apply_filters( 'flux_suite/i18n/script_translations_path', '' );
+		if ( $languages_path && is_dir( $languages_path ) ) {
+			wp_set_script_translations( $handle, I18n::domain(), $languages_path );
+		}
 	}
 
 	/**

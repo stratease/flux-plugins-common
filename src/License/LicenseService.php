@@ -325,7 +325,7 @@ class LicenseService {
 	/**
 	 * Check if license invalid notice should be displayed.
 	 *
-	 * Derived from the same cached rule as feature gating: a key must exist and
+	 * Derived from the same cached rule as cloud service eligibility: a key must exist and
 	 * {@see is_cached_license_valid()} must be false. Does not read the invalid-notice transient
 	 * for the decision; that transient remains a write-through mirror updated from API results
 	 * and from {@see check_validity_and_update_notice()}. When cached validity is true, the stale

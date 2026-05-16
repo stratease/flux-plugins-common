@@ -178,6 +178,18 @@ Run the verifier from a plugin root (example):
 - Declare **GPL-2.0-or-later** (or compatible) for the **whole** plugin, including prefixed vendor code, in the plugin header and `readme.txt`.
 - Document **external services** (API endpoints, data sent) accurately in `readme.txt` if the shipped code calls out to third-party or first-party hosted services.
 - Do not ship **development-only** files (tests, source maps, audit notes, local tooling) in the WordPress.org zip; rely on `plugin-dist-rsync-excludes.txt` and the verifier before tagging a release.
+- User-facing strings must not imply payment unlocks **bundled** plugin code (see [docs/WPORG_COMPLIANCE.md](docs/WPORG_COMPLIANCE.md)).
+
+### WordPress.org compliance (integrators)
+
+Full policy: [docs/WPORG_COMPLIANCE.md](docs/WPORG_COMPLIANCE.md).
+
+- **SaaS-only gating:** `LicenseService::is_license_valid()` may guard **outbound Flux cloud API** calls only—not local UI, settings, logs, or user-supplied API keys.
+- **Language:** Prefer “optional Flux cloud processing” / “licensed cloud services”; avoid “unlock premium”, “trial”, or “pay to unlock” for code shipped in the org zip.
+- **i18n:** PHP uses the host text domain via `FluxPlugins::init()` and `I18n::domain()`. JavaScript in this library must use the string literal `'flux-plugins-common'` as the second argument to `__()` (required for WP.org translation parsers—no variables or constants). Host plugins should include prefixed common JS paths when running `wp i18n make-pot`, or merge strings into their catalog per [docs/WPORG_COMPLIANCE.md](docs/WPORG_COMPLIANCE.md).
+- **Script translations:** `add_filter( 'flux_suite/i18n/script_translations_path', fn () => dirname( plugin_dir_path( __FILE__ ) ) . '/languages' );`
+- **Admin notices:** Invalid-license notices appear only on Flux Suite and host plugin admin screens.
+- **readme.txt:** Document `https://api.fluxplugins.com`, data sent, and Terms/Privacy under External services.
 
 ## Building Assets
 
@@ -840,7 +852,7 @@ export default apiService;
 
 #### License Management
 
-The common library provides shared license management. To use it:
+The common library provides shared license management for **optional Flux cloud services**. Do not use license checks to disable local plugin features (see [docs/WPORG_COMPLIANCE.md](docs/WPORG_COMPLIANCE.md)).
 
 **PHP:**
 ```php
@@ -849,7 +861,7 @@ use YourPlugin\FluxPlugins\Common\License\LicenseService;
 // Get license key
 $license_key = LicenseService::get_instance()->get_license_key();
 
-// Check if license is valid
+// Cloud service eligibility only (before calling api.fluxplugins.com)
 $is_valid = LicenseService::get_instance()->is_license_valid();
 ```
 

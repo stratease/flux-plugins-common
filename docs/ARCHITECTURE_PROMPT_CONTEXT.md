@@ -364,6 +364,8 @@ Standard pattern for settings endpoints:
 
 ## 11) Extension System (Pro Add-on Architecture)
 
+**WordPress.org free plugins:** The plugin zip must ship complete **local** functionality. Pro add-ons or Flux cloud services are distributed separately or documented as optional SaaS; do not time-limit or lock bundled code in the org build. See [WPORG_COMPLIANCE.md](WPORG_COMPLIANCE.md).
+
 ### FLUX_EXTENSIONS Registry (JavaScript)
 
 The extension registry allows Pro add-on plugins to inject UI components into free plugin admin pages without modifying the free plugin's code.

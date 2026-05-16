@@ -10,4 +10,6 @@ export { default as BrandIcon } from './PageLayout/BrandIcon';
 export { default as FluxAppProvider } from './FluxAppProvider/FluxAppProvider';
 export { default as LogsPage } from './Logs/LogsPage';
 export { default as UpsellCard } from './License/UpsellCard';
+/** @since 1.2.0 Alias for UpsellCard (optional cloud services positioning). */
+export { default as CloudServicesCard } from './License/UpsellCard';
 

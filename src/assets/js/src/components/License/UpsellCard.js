@@ -1,9 +1,10 @@
 /**
- * Shared Flux Suite Pro upsell card (License page, plugin overviews).
+ * Optional Flux cloud services card (License page, plugin overviews).
  *
  * IMPORTANT: This file is part of the externally managed `stratease/flux-plugins-common` library.
  *
  * @since 1.1.0
+ * @since 1.2.0 WP.org-aligned copy; SaaS-only positioning (not local feature locking).
  */
 
 import React from 'react';
@@ -43,14 +44,14 @@ export default function UpsellCard({
   ctaHref,
   caption,
 }) {
-  const titleUse = title ?? __('Upgrade to Pro', 'flux-plugins-common');
+  const titleUse = title ?? __('Upgrade to Premium Flux Services', 'flux-plugins-common');
   const introUse =
     intro ?? __('Get more powerful features with Flux Suite Pro:', 'flux-plugins-common');
   const bulletsUse = Array.isArray(bullets) && bullets.length > 0 ? bullets : DEFAULT_BULLET_KEYS;
   const ctaLabelUse = ctaLabel ?? __('Get Your License', 'flux-plugins-common');
   const ctaHrefUse = ctaHref ?? 'https://fluxplugins.com';
   const captionUse =
-    caption ?? __('Single license unlocks all premium features', 'flux-plugins-common');
+    caption ?? __('Single license unlocks all premium Flux Service features', 'flux-plugins-common');
 
   return (
     <Card

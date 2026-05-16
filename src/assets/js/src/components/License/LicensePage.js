@@ -210,7 +210,7 @@ const LicensePageContent = () => {
             {/* Introduction message */}
             {licenseKey && licenseData?.license_is_valid ? (
               <Typography variant="body1" color="text.secondary">
-                {__('Your license provides access to download and use all plugins in the Flux Suite.', 'flux-plugins-common')}{' '}
+                {__('Your license provides access to download and use all plugin features in the Flux Suite.', 'flux-plugins-common')}{' '}
                 <Link
                   href="https://fluxplugins.com"
                   target="_blank"
@@ -222,7 +222,7 @@ const LicensePageContent = () => {
               </Typography>
             ) : (
               <Typography variant="body1" color="text.secondary">
-                {__('Enter your Flux Suite license key to unlock premium features across all Flux Suite plugins.', 'flux-plugins-common')}
+                {__('Enter your Flux Suite license key to unlock premium Flux Suite services across all Flux Suite plugins.', 'flux-plugins-common')}
               </Typography>
             )}
 
@@ -293,7 +293,7 @@ const LicensePageContent = () => {
               {licenseKey && licenseData?.license_is_valid && (
                 <Alert severity="success">
                   <Typography variant="body2">
-                    {__('Your license is active and valid. Premium features are enabled across all Flux Suite plugins.', 'flux-plugins-common')}
+                    {__('Your license is active and valid. Premium Flux Suite service features are enabled across all Flux Suite plugins.', 'flux-plugins-common')}
                   </Typography>
                 </Alert>
               )}

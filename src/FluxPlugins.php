@@ -197,18 +197,20 @@ class FluxPlugins {
 	 * Uses {@see LicenseService::should_show_invalid_notice()} (cached validity + key; SSOT in LicenseService).
 	 *
 	 * @since 1.0.0
-	 * @since 1.2.0 Docblock aligned with SSOT notice derivation (not transient-only).
+	 * @since 1.2.0 Screen-scoped notice; SaaS-only messaging (see docs/WPORG_COMPLIANCE.md).
 	 * @return void
 	 */
 	public function display_license_validation_notice() {
-		// Only show to users with manage_options capability.
 		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		if ( ! $this->should_show_license_notice_on_screen() ) {
 			return;
 		}
 
 		$license_service = LicenseService::get_instance();
 
-		// Check if notice should be displayed.
 		if ( ! $license_service->should_show_invalid_notice() ) {
 			return;
 		}
@@ -219,7 +221,7 @@ class FluxPlugins {
 		// Build notice message.
 		$message = sprintf(
 			/* translators: %1$s: License page URL */
-			__( 'Your Flux Suite license is invalid or has expired. Please <a href="%1$s">validate your license</a> to enable external processing features.', I18n::domain() ),
+			__( 'Your Flux Suite license is invalid or expired. <a href="%1$s">Validate your license</a> to restore optional Flux cloud processing. Local plugin features are not disabled.', I18n::domain() ),
 			esc_url( $license_url )
 		);
 
@@ -228,6 +230,44 @@ class FluxPlugins {
 			'<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
 			wp_kses_post( $message )
 		);
+	}
+
+	/**
+	 * Whether the invalid cloud-license admin notice may appear on the current admin screen.
+	 *
+	 * Limited to Flux Suite and the host plugin admin screens (guideline #11).
+	 *
+	 * @since 1.2.0
+	 * @return bool
+	 */
+	public function should_show_license_notice_on_screen() {
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return false;
+		}
+
+		$screen = get_current_screen();
+		if ( ! $screen || empty( $screen->id ) ) {
+			return false;
+		}
+
+		$screen_id = (string) $screen->id;
+
+		if ( strpos( $screen_id, 'flux-suite' ) !== false ) {
+			return true;
+		}
+
+		if ( ! empty( $this->plugin_slug ) && strpos( $screen_id, $this->plugin_slug ) !== false ) {
+			return true;
+		}
+
+		/**
+		 * Filter whether the invalid cloud-license admin notice appears on the current screen.
+		 *
+		 * @since 1.2.0
+		 * @param bool   $show      Default false outside Flux Suite / host plugin screens.
+		 * @param string $screen_id Current admin screen ID.
+		 */
+		return (bool) apply_filters( 'flux_suite/license_service/show_admin_notice_on_screen', false, $screen_id );
 	}
 
 }
