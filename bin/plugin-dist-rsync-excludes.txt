@@ -42,6 +42,8 @@ Thumbs.db
 *.map
 phpunit.xml
 phpunit.xml.dist
+phpstan.neon
+phpstan.neon.dist
 audit-*.md
 vendor-prefixed/plugins
 wporg
