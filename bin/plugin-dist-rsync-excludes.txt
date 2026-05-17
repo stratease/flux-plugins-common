@@ -3,8 +3,16 @@
 # Syntax: same as rsync --exclude (see rsync(1)).
 
 bin
+vendor/stratease/flux-plugins-common
 vendor/stratease/*/bin
 vendor-prefixed/stratease/*/bin
+vendor-prefixed/stratease/flux-plugins-common/src/assets/js/src
+vendor-prefixed/stratease/flux-plugins-common/node_modules
+vendor-prefixed/stratease/flux-plugins-common/package.json
+vendor-prefixed/stratease/flux-plugins-common/package-lock.json
+vendor-prefixed/stratease/flux-plugins-common/webpack.config.js
+vendor-prefixed/stratease/flux-plugins-common/webpack.config.helpers.js
+src/assets/common/js/src
 scripts
 node_modules
 .eslintignore

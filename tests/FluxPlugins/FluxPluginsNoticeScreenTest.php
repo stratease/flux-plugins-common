@@ -28,8 +28,11 @@ class FluxPluginsNoticeScreenTest extends BaseTestCase {
 	/**
 	 * @after
 	 */
-	public function remove_notice_screen_filter() {
+	public function tear_down_notice_screen_test() {
 		remove_all_filters( 'flux_suite/license_service/show_admin_notice_on_screen' );
+		if ( function_exists( 'set_current_screen' ) ) {
+			set_current_screen( 'front' );
+		}
 	}
 
 	public function test_should_show_license_notice_on_screen_false_when_no_screen() {
@@ -37,15 +40,29 @@ class FluxPluginsNoticeScreenTest extends BaseTestCase {
 		$this->assertFalse( FluxPlugins::get_instance()->should_show_license_notice_on_screen() );
 	}
 
+	public function test_should_show_license_notice_on_screen_true_for_flux_suite_screen() {
+		FluxPlugins::init( 'flux-test-plugin', '1.0.0', 'flux-test-plugin' );
+		set_current_screen( 'flux-suite' );
+		$this->assertTrue( FluxPlugins::get_instance()->should_show_license_notice_on_screen() );
+	}
+
+	public function test_should_show_license_notice_on_screen_true_for_host_plugin_screen() {
+		FluxPlugins::init( 'flux-test-plugin', '1.0.0', 'flux-test-plugin' );
+		set_current_screen( 'toplevel_page_flux-test-plugin' );
+		$this->assertTrue( FluxPlugins::get_instance()->should_show_license_notice_on_screen() );
+	}
+
 	public function test_filter_can_enable_notice_on_screen() {
 		FluxPlugins::init( 'flux-test-plugin', '1.0.0', 'flux-test-plugin' );
+		set_current_screen( 'dashboard' );
 		add_filter( 'flux_suite/license_service/show_admin_notice_on_screen', '__return_true' );
-		$this->assertTrue( FluxPlugins::get_instance()->should_show_license_notice_on_screen() );
+		$result = FluxPlugins::get_instance()->should_show_license_notice_on_screen();
+		$this->assertTrue( $result );
 	}
 
 	public function test_filter_defaults_false_for_unknown_screen() {
 		FluxPlugins::init( 'flux-test-plugin', '1.0.0', 'flux-test-plugin' );
-		$show = apply_filters( 'flux_suite/license_service/show_admin_notice_on_screen', false, 'dashboard' );
-		$this->assertFalse( $show );
+		set_current_screen( 'dashboard' );
+		$this->assertFalse( FluxPlugins::get_instance()->should_show_license_notice_on_screen() );
 	}
 }

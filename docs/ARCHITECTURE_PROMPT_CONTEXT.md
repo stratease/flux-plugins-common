@@ -664,7 +664,8 @@ Each plugin's `composer.json` must declare Strauss config in `extra.strauss`:
 
 Each plugin must provide these composer scripts:
 
-- `copy-common-assets` — Copies common library assets before Strauss runs.
+- `copy-common-assets` — Copies common runtime assets (`js/dist`, `images`) to `src/assets/common/` before Strauss runs (not `js/src`).
+- `delete_vendor_packages` (Strauss) — Removes unprefixed `stratease/flux-plugins-common` from `vendor/` after prefixing.
 - `prefix-namespaces` — Runs copy, downloads Strauss if needed, runs Strauss, dumps autoload, fixes bin wrappers.
 - `fix-bin-wrappers` — Fixes Strauss path issues for common library bin scripts.
 - `post-install-cmd` / `post-update-cmd` — Auto-runs `prefix-namespaces`.

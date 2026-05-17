@@ -201,7 +201,7 @@ npm install
 npm run build
 ```
 
-**Important:** The built bundle files (`src/assets/js/dist/*.bundle.js`) **must be committed** to the repository. These files are required when the library is installed via Composer/Strauss, as plugins need access to the pre-built bundles without requiring a build step. Assets are stored in `src/assets/` so Strauss will copy them to the vendor-prefixed location.
+**Important:** The built bundle files (`src/assets/js/dist/*.bundle.js`) **must be committed** to this repository. Integrating plugins copy **only** `js/dist` and `images` into `src/assets/common/` (see [Asset Management](#asset-management)); they do not rebuild License/Logs/compatibility bundles locally.
 
 ## PHP tests (PHPUnit)
 
@@ -223,6 +223,18 @@ npm run dev
 ```
 
 ## Asset Management
+
+### Runtime vs build-time layout
+
+Integrating plugins use **three separate trees** for the common library:
+
+| Location | Role | Shipped in WP.org zip? |
+|----------|------|------------------------|
+| `vendor/stratease/flux-plugins-common/` | Composer install + Strauss **input** (dev/CI only) | **No** (excluded by `plugin-dist-rsync-excludes.txt`) |
+| `vendor-prefixed/stratease/flux-plugins-common/` | Strauss-prefixed **PHP** (`YourPlugin\FluxPlugins\Common\…`) | **Yes** (PHP only; exclude bundled JS sources/webpack files via rsync excludes) |
+| `src/assets/common/` in each plugin | Runtime **static** assets (`js/dist`, `images`) passed to `FluxPlugins::init()` | **Yes** (`dist` + `images` only) |
+
+**JavaScript source** (`src/assets/js/src/`) lives only in **this** repository (or a monorepo sibling checkout). Plugin webpack aliases `@flux-plugins-common` to that path at build time; it is not copied into each plugin.
 
 ### Asset URL Configuration
 
@@ -246,13 +258,21 @@ The common assets URL should point to a directory within your plugin where the c
 
 ### Composer Script Setup
 
-Each plugin must copy common library assets from `vendor/` to `src/assets/common/` **before** Strauss runs. Add this to your `composer.json`:
+Each plugin must copy **runtime** common assets (`js/dist` + `images`) from `vendor/` to `src/assets/common/` **before** Strauss runs. Add this to your `composer.json`:
 
 ```json
 {
+    "extra": {
+        "strauss": {
+            "target_directory": "vendor-prefixed",
+            "namespace_prefix": "YourPlugin\\\\",
+            "packages": [ "stratease/flux-plugins-common" ],
+            "delete_vendor_packages": true
+        }
+    },
     "scripts": {
         "copy-common-assets": [
-            "sh -c 'if [ -d vendor/stratease/flux-plugins-common/src/assets ]; then mkdir -p src/assets/common && cp -r vendor/stratease/flux-plugins-common/src/assets/* src/assets/common/ && echo \"✅ Copied common library assets to src/assets/common/\"; else echo \"⚠️  Common library assets not found in vendor/\"; fi'"
+            "sh -c 'SRC=vendor/stratease/flux-plugins-common/src/assets; DST=src/assets/common; if [ -d \"$SRC\" ]; then mkdir -p \"$DST/js\" \"$DST/images\"; cp -r \"$SRC/images\" \"$DST/\" 2>/dev/null || true; cp -r \"$SRC/js/dist\" \"$DST/js/\"; echo \"✅ Copied common runtime assets (js/dist + images)\"; else echo \"⚠️  Common library not in vendor/\"; fi'"
         ],
         "prefix-namespaces": [
             "@copy-common-assets",
@@ -260,31 +280,40 @@ Each plugin must copy common library assets from `vendor/` to `src/assets/common
             "@php bin/strauss.phar",
             "@composer dump-autoload",
             "@fix-bin-wrappers"
-        ]
+        ],
+        "post-install-cmd": [ "@prefix-namespaces" ],
+        "post-update-cmd": [ "@prefix-namespaces" ]
     }
 }
 ```
 
-**Important:** The `copy-common-assets` script must run **BEFORE** `prefix-namespaces` (Strauss) so that assets are available in the plugin's directory structure before Strauss processes the vendor files.
+**Important:**
+
+- `copy-common-assets` must run **before** Strauss so `vendor/stratease/flux-plugins-common` still exists.
+- `delete_vendor_packages: true` removes the unprefixed common package from `vendor/` after prefixing (smaller tree; avoids duplicate autoload). Re-run `composer install` to refresh `vendor/` before another copy.
+- Suite admin bundles (License, Logs, compatibility dismiss) are built **here** (`npm run build`), not in each plugin's webpack config.
+
+**Monorepo development:** point webpack at a sibling checkout (see [Webpack Alias Configuration](#webpack-alias-configuration)) or set `FLUX_PLUGINS_COMMON_PATH` to the common library root. Optional Composer [path repository](https://getcomposer.org/doc/05-repositories.md#path-repository) for PHP.
 
 ### Directory Structure
 
-After running `composer install` or `composer update`, your plugin should have this structure:
+After `composer install` / `composer update`:
 
 ```
 your-plugin/
 ├── src/
 │   └── assets/
-│       └── common/          # Copied from vendor before Strauss
+│       └── common/              # Runtime static assets only
 │           ├── js/
-│           │   ├── dist/    # Built bundles
-│           │   └── src/     # Source files
-│           └── images/      # Image assets
-├── vendor/                  # Original Composer dependencies
-└── vendor-prefixed/         # Strauss-prefixed dependencies
+│           │   └── dist/        # Pre-built bundles (from common lib)
+│           └── images/
+├── vendor/                      # Plugin deps (not unprefixed common after Strauss)
+└── vendor-prefixed/
+    └── stratease/
+        └── flux-plugins-common/ # Prefixed PHP (+ dev-only asset tree)
 ```
 
-The `src/assets/common/` directory contains all common library assets and is used for enqueuing scripts and styles. This directory should be included in your plugin's build/deployment process.
+`src/assets/common/` is what `MenuService` enqueues at runtime. Include it in your plugin zip; exclude `src/assets/common/js/src` if it was ever committed (see `plugin-dist-rsync-excludes.txt`).
 
 ### Backwards Compatibility
 
@@ -678,20 +707,23 @@ Create a `webpack.config.js` in your plugin that extends the common library's ba
 const path = require('path');
 const { createBaseWebpackConfig } = require('../../flux-plugins-common/webpack.config.helpers');
 
-// Find flux-plugins-common directory
+// Find flux-plugins-common directory (build-time only; not copied into src/assets/common/js/src)
 function findFluxPluginsCommonDir() {
+  const envPath = process.env.FLUX_PLUGINS_COMMON_PATH;
   const possiblePaths = [
+    envPath ? path.resolve(envPath) : null,
+    path.resolve(__dirname, '../../../flux-plugins-common'),
     path.resolve(__dirname, '../../flux-plugins-common'),
     path.resolve(__dirname, 'vendor-prefixed/stratease/flux-plugins-common'),
-  ];
-  
+  ].filter(Boolean);
+
   for (const possiblePath of possiblePaths) {
-    if (require('fs').existsSync(possiblePath) && 
+    if (require('fs').existsSync(possiblePath) &&
         require('fs').existsSync(path.join(possiblePath, 'webpack.config.helpers.js'))) {
       return possiblePath;
     }
   }
-  return path.resolve(__dirname, '../../flux-plugins-common');
+  return path.resolve(__dirname, '../../../flux-plugins-common');
 }
 
 const commonLibDir = findFluxPluginsCommonDir();
