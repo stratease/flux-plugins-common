@@ -164,8 +164,34 @@ Plugins that ship this library (via Composer and Strauss into `vendor-prefixed/`
 **Distribution copy:** Shared build tooling lives in this repo:
 
 - [`bin/build-plugin.sh`](bin/build-plugin.sh) — rsync from the plugin working tree into `wporg/trunk/` (or a temp tree) for zips and SVN.
-- [`bin/plugin-dist-rsync-excludes.txt`](bin/plugin-dist-rsync-excludes.txt) — **single source of truth** for rsync `--exclude` patterns (dev dependencies, tests, maps, PHPUnit files, `audit-*.md`, etc.). Edit this file when a new dev-only path must never ship.
+- [`bin/deploy-plugin.sh`](bin/deploy-plugin.sh) — commit `wporg/trunk/` to SVN and create version tags (run **after** `build-plugin.sh`).
+- [`bin/fix-bin-wrappers.php`](bin/fix-bin-wrappers.php) — rewrites Composer `vendor/bin/*` shims when Strauss removes `vendor/stratease/flux-plugins-common` (required for `delete_vendor_packages`; see [Composer bin wrappers](#composer-bin-wrappers-build--deploy)).
+- [`bin/plugin-dist-rsync-excludes.txt`](bin/plugin-dist-rsync-excludes.txt) — **single source of truth** for rsync `--exclude` patterns (dev dependencies, `tests/` including WorDBless `tests/wordpress/` core copy, maps, PHPUnit files, `audit-*.md`, etc.). Edit this file when a new dev-only path must never ship.
 - [`bin/verify-plugin-distribution.sh`](bin/verify-plugin-distribution.sh) — optional gate: performs the same filtered copy to a temp directory and fails if `phpunit.xml.dist` or `audit-*.md` appear under the simulated distribution tree.
+
+### Release workflow (from a plugin root)
+
+After your plugin’s `composer.json` includes the [Composer script setup](#composer-script-setup) below (including `fix-bin-wrappers`):
+
+```bash
+cd /path/to/your-plugin
+
+# Installs deps, runs Strauss, copies runtime assets, fixes vendor/bin wrappers
+composer install
+
+# Build wporg/trunk (or packaging tree) — use the Composer shim, not a raw path
+./vendor/bin/build-plugin.sh
+
+# Optional: push to WordPress.org SVN (requires wporg/ checkout and credentials)
+./vendor/bin/deploy-plugin.sh
+```
+
+Both `./vendor/bin/build-plugin.sh` and `./vendor/bin/deploy-plugin.sh` resolve to scripts under `vendor-prefixed/stratease/flux-plugins-common/bin/` **only after** wrappers are fixed. Without `fix-bin-wrappers`, you may see:
+
+```text
+cd: can't cd to ../stratease/flux-plugins-common/bin
+exec: /build-plugin.sh: not found
+```
 
 Run the verifier from a plugin root (example):
 
@@ -177,7 +203,7 @@ Run the verifier from a plugin root (example):
 
 - Declare **GPL-2.0-or-later** (or compatible) for the **whole** plugin, including prefixed vendor code, in the plugin header and `readme.txt`.
 - Document **external services** (API endpoints, data sent) accurately in `readme.txt` if the shipped code calls out to third-party or first-party hosted services.
-- Do not ship **development-only** files (tests, source maps, audit notes, local tooling) in the WordPress.org zip; rely on `plugin-dist-rsync-excludes.txt` and the verifier before tagging a release.
+- Do not ship **development-only** files (tests and WorDBless `tests/wordpress/` from Composer, source maps, audit notes, local tooling) in the WordPress.org zip; rely on `plugin-dist-rsync-excludes.txt` and the verifier before tagging a release.
 - User-facing strings must not imply payment unlocks **bundled** plugin code (see [docs/WPORG_COMPLIANCE.md](docs/WPORG_COMPLIANCE.md)).
 
 ### WordPress.org compliance (integrators)
@@ -258,7 +284,9 @@ The common assets URL should point to a directory within your plugin where the c
 
 ### Composer Script Setup
 
-Each plugin must copy **runtime** common assets (`js/dist` + `images`) from `vendor/` to `src/assets/common/` **before** Strauss runs. Add this to your `composer.json`:
+Each plugin must copy **runtime** common assets (`js/dist` + `images`) from `vendor/` to `src/assets/common/` **before** Strauss runs, and must wire **`fix-bin-wrappers`** so `vendor/bin/build-plugin.sh` and `vendor/bin/deploy-plugin.sh` keep working after Strauss deletes the unprefixed package.
+
+Add this **complete** pattern to your `composer.json` (replace `YourPlugin\\` with your Strauss namespace prefix):
 
 ```json
 {
@@ -266,13 +294,18 @@ Each plugin must copy **runtime** common assets (`js/dist` + `images`) from `ven
         "strauss": {
             "target_directory": "vendor-prefixed",
             "namespace_prefix": "YourPlugin\\\\",
+            "classmap_prefix": "YourPlugin_",
+            "constant_prefix": "YourPlugin_",
             "packages": [ "stratease/flux-plugins-common" ],
             "delete_vendor_packages": true
         }
     },
     "scripts": {
         "copy-common-assets": [
-            "sh -c 'SRC=vendor/stratease/flux-plugins-common/src/assets; DST=src/assets/common; if [ -d \"$SRC\" ]; then mkdir -p \"$DST/js\" \"$DST/images\"; cp -r \"$SRC/images\" \"$DST/\" 2>/dev/null || true; cp -r \"$SRC/js/dist\" \"$DST/js/\"; echo \"✅ Copied common runtime assets (js/dist + images)\"; else echo \"⚠️  Common library not in vendor/\"; fi'"
+            "sh -c 'SRC=vendor/stratease/flux-plugins-common/src/assets; DST=src/assets/common; if [ -d \"$SRC\" ]; then mkdir -p \"$DST/js\" \"$DST/images\"; cp -r \"$SRC/images\" \"$DST/\" 2>/dev/null || true; cp -r \"$SRC/js/dist\" \"$DST/js/\"; echo \"✅ Copied common runtime assets (js/dist + images) to src/assets/common/\"; else echo \"⚠️  Common library not in vendor/ — run composer install\"; fi'"
+        ],
+        "fix-bin-wrappers": [
+            "sh -c 'if [ -f vendor-prefixed/stratease/flux-plugins-common/bin/fix-bin-wrappers.php ]; then php vendor-prefixed/stratease/flux-plugins-common/bin/fix-bin-wrappers.php; elif [ -f vendor/stratease/flux-plugins-common/bin/fix-bin-wrappers.php ]; then php vendor/stratease/flux-plugins-common/bin/fix-bin-wrappers.php; fi'"
         ],
         "prefix-namespaces": [
             "@copy-common-assets",
@@ -282,7 +315,8 @@ Each plugin must copy **runtime** common assets (`js/dist` + `images`) from `ven
             "@fix-bin-wrappers"
         ],
         "post-install-cmd": [ "@prefix-namespaces" ],
-        "post-update-cmd": [ "@prefix-namespaces" ]
+        "post-update-cmd": [ "@prefix-namespaces" ],
+        "post-autoload-dump": [ "@fix-bin-wrappers" ]
     }
 }
 ```
@@ -291,9 +325,51 @@ Each plugin must copy **runtime** common assets (`js/dist` + `images`) from `ven
 
 - `copy-common-assets` must run **before** Strauss so `vendor/stratease/flux-plugins-common` still exists.
 - `delete_vendor_packages: true` removes the unprefixed common package from `vendor/` after prefixing (smaller tree; avoids duplicate autoload). Re-run `composer install` to refresh `vendor/` before another copy.
+- **`fix-bin-wrappers` is required** when using `delete_vendor_packages: true` — see [Composer bin wrappers](#composer-bin-wrappers-build--deploy).
 - Suite admin bundles (License, Logs, compatibility dismiss) are built **here** (`npm run build`), not in each plugin's webpack config.
 
 **Monorepo development:** point webpack at a sibling checkout (see [Webpack Alias Configuration](#webpack-alias-configuration)) or set `FLUX_PLUGINS_COMMON_PATH` to the common library root. Optional Composer [path repository](https://getcomposer.org/doc/05-repositories.md#path-repository) for PHP.
+
+### Composer bin wrappers (build & deploy)
+
+This package registers Composer **bin** commands (`build-plugin.sh`, `deploy-plugin.sh`) declared in [`composer.json`](composer.json) (`"bin": [ "bin/build-plugin.sh", "bin/deploy-plugin.sh" ]`). When a plugin runs `composer install`, Composer writes shims under **`vendor/bin/`** that initially point at:
+
+```text
+vendor/stratease/flux-plugins-common/bin/
+```
+
+Strauss with **`delete_vendor_packages: true`** removes that directory after prefixing. The real scripts remain at:
+
+```text
+vendor-prefixed/stratease/flux-plugins-common/bin/build-plugin.sh
+vendor-prefixed/stratease/flux-plugins-common/bin/deploy-plugin.sh
+```
+
+[`bin/fix-bin-wrappers.php`](bin/fix-bin-wrappers.php) rewrites each `vendor/bin/*.sh` shim to use `../../vendor-prefixed/stratease/flux-plugins-common/bin` and restores execute bits on the prefixed scripts.
+
+| When | What runs | Why |
+|------|-----------|-----|
+| `composer install` / `update` | `@prefix-namespaces` → ends with `@fix-bin-wrappers` | Full pipeline + wrapper fix |
+| `composer dump-autoload` | `post-autoload-dump` → `@fix-bin-wrappers` | Regenerated `vendor/bin` shims stay valid (CI, plugins that dump autoload without full install) |
+| Manual recovery | `php vendor-prefixed/stratease/flux-plugins-common/bin/fix-bin-wrappers.php` | Same fix if wrappers were reset |
+
+**Do not** call `build-plugin.sh` or `deploy-plugin.sh` only by path under `vendor/stratease/` — that path does not exist after Strauss. Use:
+
+```bash
+./vendor/bin/build-plugin.sh
+./vendor/bin/deploy-plugin.sh
+```
+
+or, without going through Composer shims:
+
+```bash
+bash vendor-prefixed/stratease/flux-plugins-common/bin/build-plugin.sh
+bash vendor-prefixed/stratease/flux-plugins-common/bin/deploy-plugin.sh
+```
+
+**Deploy:** `deploy-plugin.sh` uses the same wrapper mechanism as `build-plugin.sh`. Run `composer install` (or at least `fix-bin-wrappers`) in the plugin root before `./vendor/bin/deploy-plugin.sh` so the deploy shim targets `vendor-prefixed/…`.
+
+Plugins with extra Strauss steps (for example webpack helper copy in **flux-ai-media-alt-creator-pro**) should still call `@fix-bin-wrappers` **after** Strauss in `prefix-namespaces` and in `post-autoload-dump`.
 
 ### Directory Structure
 

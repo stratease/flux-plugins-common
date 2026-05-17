@@ -662,13 +662,16 @@ Each plugin's `composer.json` must declare Strauss config in `extra.strauss`:
 
 ### Composer Scripts Contract
 
-Each plugin must provide these composer scripts:
+Each plugin must provide these composer scripts (canonical JSON in [`README.md`](../README.md#composer-script-setup)):
 
 - `copy-common-assets` — Copies common runtime assets (`js/dist`, `images`) to `src/assets/common/` before Strauss runs (not `js/src`).
+- `fix-bin-wrappers` — Runs [`bin/fix-bin-wrappers.php`](../bin/fix-bin-wrappers.php) so `vendor/bin/build-plugin.sh` and `vendor/bin/deploy-plugin.sh` point at `vendor-prefixed/stratease/flux-plugins-common/bin/` after `delete_vendor_packages` removes `vendor/stratease/…`.
 - `delete_vendor_packages` (Strauss) — Removes unprefixed `stratease/flux-plugins-common` from `vendor/` after prefixing.
-- `prefix-namespaces` — Runs copy, downloads Strauss if needed, runs Strauss, dumps autoload, fixes bin wrappers.
-- `fix-bin-wrappers` — Fixes Strauss path issues for common library bin scripts.
+- `prefix-namespaces` — Runs copy, downloads Strauss if needed, runs Strauss, dumps autoload, **`@fix-bin-wrappers`** (last).
 - `post-install-cmd` / `post-update-cmd` — Auto-runs `prefix-namespaces`.
+- `post-autoload-dump` — **`@fix-bin-wrappers`** so regenerated Composer bin shims stay valid before `./vendor/bin/build-plugin.sh` or `./vendor/bin/deploy-plugin.sh`.
+
+**Release commands (plugin root):** `composer install` → `./vendor/bin/build-plugin.sh` → `./vendor/bin/deploy-plugin.sh` (optional).
 
 ---
 

@@ -45,3 +45,4 @@ phpunit.xml.dist
 audit-*.md
 vendor-prefixed/plugins
 wporg
+test-results
