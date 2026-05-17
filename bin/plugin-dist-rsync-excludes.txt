@@ -44,6 +44,7 @@ phpunit.xml
 phpunit.xml.dist
 phpstan.neon
 phpstan.neon.dist
+.phpstan
 audit-*.md
 vendor-prefixed/plugins
 wporg
