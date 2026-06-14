@@ -137,6 +137,34 @@ define( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT', 360 );
 define( 'FLUX_PLUGINS_COMMON_DISABLE_CACHE', true );
 ```
 
+### Optional local dev script base (wp-config only)
+
+React admin bundles ship as built files under `assets/js/dist/`. For local webpack hot reload, each plugin may support an **optional** constant defined **only** in the site's `wp-config.php` (never in plugin bootstrap or release zips).
+
+**Naming convention:** `FLUX_{PLUGIN_PREFIX}_DEV_SCRIPT_BASE`
+
+Examples:
+
+- `FLUX_ONE_DEV_SCRIPT_BASE` — [flux-one-command-bar](https://github.com/stratease/flux-one-command-bar) (reference implementation)
+- `FLUX_MEDIA_OPTIMIZER_DEV_SCRIPT_BASE` — [flux-media-optimizer](https://github.com/stratease/flux-media-optimizer)
+
+**Gate (all required):**
+
+1. `WP_DEBUG` is true
+2. `SCRIPT_DEBUG` is true
+3. The plugin's `FLUX_*_DEV_SCRIPT_BASE` constant is defined, is a non-empty string, and points at your webpack dev server root (scheme + host + optional path)
+
+When the gate passes, `AdminController` resolves bundle URLs as `{base}/{filename}` (PHP trims trailing slashes on the base). Otherwise WordPress always loads shipped `assets/js/dist/*.bundle.js`, even when debug flags are on.
+
+**WordPress.org:** Plugin PHP must **not** contain hardcoded `localhost` or dev-server URLs. Keep dev URLs in local `wp-config.php` only. Add a PHPUnit source-scan test (see flux-one / flux-media-optimizer `AdminControllerScriptUrlTest`) to prevent regressions.
+
+Example (local machine only):
+
+```php
+// wp-config.php — not shipped in the plugin
+define( 'FLUX_MEDIA_OPTIMIZER_DEV_SCRIPT_BASE', 'http://localhost:3000' );
+```
+
 ## Installation
 
 Add this repository as a VCS dependency in your plugin's `composer.json`:
@@ -728,47 +756,80 @@ class Plugin {
 
 #### 5. Enqueue Admin Scripts
 
-Enqueue your React app and localize script data:
+Enqueue your React app and localize script data. Production builds always use `assets/js/dist/admin.bundle.js`. Optional webpack HMR uses a wp-config-only dev base constant (see [Optional local dev script base](#optional-local-dev-script-base-wp-config-only)); reference implementation: flux-one-command-bar `AdminController`.
 
 ```php
-class Plugin {
-    public function init() {
-        // ... other initialization
-        
-        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
-    }
-    
+class AdminController {
     /**
-     * Enqueue admin scripts
-     *
      * @since 1.0.0
-     * @param string $hook Current admin page hook
+     * @param string $hook Current admin page hook.
      */
     public function enqueue_admin_scripts( $hook ) {
-        // Only load on your plugin's admin pages
         if ( strpos( $hook, 'your-plugin-slug' ) === false ) {
             return;
         }
-        
-        // Enqueue your React app bundle
+
         wp_enqueue_script(
             'your-plugin-admin',
-            plugin_dir_url( __FILE__ ) . 'assets/js/dist/admin.bundle.js',
+            $this->get_script_url(),
             [ 'wp-api-fetch', 'wp-element', 'wp-components', 'wp-i18n' ],
             YOUR_PLUGIN_VERSION,
             true
         );
-        
-        // Localize script with WordPress data
+
         wp_localize_script( 'your-plugin-admin', 'yourPluginAdmin', [
-            'apiUrl' => rest_url( 'your-plugin-slug/v1/' ),
-            'nonce' => wp_create_nonce( 'wp_rest' ),
-            'adminUrl' => admin_url(),
+            'apiUrl'    => rest_url( 'your-plugin-slug/v1/' ),
+            'nonce'     => wp_create_nonce( 'wp_rest' ),
+            'adminUrl'  => admin_url(),
             'pluginUrl' => YOUR_PLUGIN_PLUGIN_URL,
         ] );
-        
-        // Enqueue WordPress admin styles
+
         wp_enqueue_style( 'wp-components' );
+    }
+
+    /**
+     * @since 1.0.0
+     * @return string
+     */
+    private function get_script_url() {
+        $dev = $this->dev_script_url( 'admin.bundle.js' );
+        if ( null !== $dev ) {
+            return $dev;
+        }
+
+        return YOUR_PLUGIN_PLUGIN_URL . 'assets/js/dist/admin.bundle.js';
+    }
+
+    /**
+     * @since 1.0.0
+     * @param string $filename Bundle file name.
+     * @return string|null
+     */
+    private function dev_script_url( string $filename ): ?string {
+        if ( ! $this->is_dev_script_base_configured() ) {
+            return null;
+        }
+
+        $base = rtrim( (string) constant( 'YOUR_PLUGIN_DEV_SCRIPT_BASE' ), '/' );
+        $file = ltrim( $filename, '/' );
+
+        return $base . '/' . $file;
+    }
+
+    /**
+     * @since 1.0.0
+     * @return bool
+     */
+    private function is_dev_script_base_configured(): bool {
+        if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG || ! defined( 'SCRIPT_DEBUG' ) || ! SCRIPT_DEBUG ) {
+            return false;
+        }
+
+        if ( ! defined( 'YOUR_PLUGIN_DEV_SCRIPT_BASE' ) || ! is_string( constant( 'YOUR_PLUGIN_DEV_SCRIPT_BASE' ) ) ) {
+            return false;
+        }
+
+        return '' !== trim( (string) constant( 'YOUR_PLUGIN_DEV_SCRIPT_BASE' ) );
     }
 }
 ```

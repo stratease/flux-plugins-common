@@ -564,6 +564,16 @@ class MenuService {
 			'dashicons-editor-kitchensink'
 		);
 
+		// Flux Fixer
+		$this->add_plugin_to_registry(
+			'flux-fixer',
+			__( 'Flux Fixer', I18n::domain() ),
+			__( 'Scan and fix database and media issues from one intelligent dashboard.', I18n::domain() ),
+			'flux-fixer/flux-fixer.php',
+			'admin.php?page=flux-fixer',
+			'https://fluxplugins.com/flux-fixer',
+			'dashicons-hammer'
+		);
 
 		// Add more plugins here as they are planned or developed.
 		// Example for a planned plugin:

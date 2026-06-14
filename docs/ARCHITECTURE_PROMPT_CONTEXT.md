@@ -37,6 +37,7 @@ Flux Plugins uses a **hybrid architecture**:
 | Flux AI Alt Text & Accessibility Audit Pro | `flux-ai-media-alt-creator-pro` | `wp-content/plugins/flux-ai-media-alt-creator-pro/` | >=8.0 | 3003 | Active |
 | Flux AI Gutenberg Page Builder | `flux-ai-gutenberg-page-builder` | `wp-content/plugins/flux-ai-gutenberg-page-builder/` | >=8.0 | 3001 | Active |
 | Flux One - Command Central | `flux-one` | `wp-content/plugins/flux-one/` | >=8.1 | 3004 | Active |
+| Flux Fixer | `flux-fixer` | `wp-content/plugins/flux-fixer/` | >=8.0 | 3005 | Active |
 
 ### Non-Integrated Plugins (standalone, not using `flux-plugins-common`)
 
@@ -68,6 +69,7 @@ Ports are assigned per-plugin to allow simultaneous development. When adding a n
 | 3002 | flux-ai-media-alt-creator |
 | 3003 | flux-ai-media-alt-creator-pro |
 | 3004 | flux-one |
+| 3005 | flux-fixer |
 
 ### Plugin Registry (`MenuService`)
 
@@ -313,7 +315,7 @@ Every plugin follows a standard admin page lifecycle. The pattern should be docu
 1. **`init()`** — Hooks `register_menu` on WordPress `init` at priority `1` (admin only). Hooks `enqueue_admin_scripts` on `admin_enqueue_scripts`.
 2. **`register_menu()`** — Calls `MenuService::register_submenu_page($slug, $title, $callback, $capability, $placement)`.
 3. **`enqueue_admin_scripts($hook)`** — Only loads on the plugin's own admin page (`flux-suite_page_{slug}`). Enqueues the plugin's admin JS bundle. Localizes script data (REST URL, nonce, admin URL, plugin URL, feature flags).
-4. **`get_script_url()`** — Returns `http://localhost:{port}/{bundle}.js` when `WP_DEBUG && SCRIPT_DEBUG` are both true, otherwise the production `assets/js/dist/{bundle}.js` path.
+4. **`get_script_url()`** — Returns `{FLUX_*_DEV_SCRIPT_BASE}/{bundle}.js` when `WP_DEBUG`, `SCRIPT_DEBUG`, and a non-empty wp-config dev base constant are all set; otherwise the production `assets/js/dist/{bundle}.js` path. Plugin PHP must not hardcode localhost URLs (WordPress.org). Reference: flux-one-command-bar `AdminController`.
 5. **`render_main_page()`** — Outputs a single `<div id="{plugin-slug}-app">` as the React mount point.
 
 ### Script Localization
