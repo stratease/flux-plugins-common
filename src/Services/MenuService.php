@@ -575,6 +575,17 @@ class MenuService {
 			'dashicons-hammer'
 		);
 
+		// Flux Blog Audit
+		$this->add_plugin_to_registry(
+			'flux-blog-audit',
+			__( 'Blog Audit', I18n::domain() ),
+			__( 'Audit blog posts for grammar, duplicate topics, and SEO recommendations.', I18n::domain() ),
+			'flux-blog-audit/flux-blog-audit.php',
+			'admin.php?page=flux-blog-audit',
+			'https://fluxplugins.com/flux-blog-audit',
+			'dashicons-search'
+		);
+
 		// Add more plugins here as they are planned or developed.
 		// Example for a planned plugin:
 		// $this->add_plugin_to_registry(

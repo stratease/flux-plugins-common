@@ -6,7 +6,8 @@ bin
 vendor/stratease/flux-plugins-common
 vendor/stratease/*/bin
 vendor-prefixed/stratease/*/bin
-vendor-prefixed/stratease/flux-plugins-common/src/assets/js/src
+# Prefixed common assets are redundant with host plugin src/assets/common/ (runtime SSOT).
+vendor-prefixed/stratease/flux-plugins-common/src/assets
 vendor-prefixed/stratease/flux-plugins-common/node_modules
 vendor-prefixed/stratease/flux-plugins-common/package.json
 vendor-prefixed/stratease/flux-plugins-common/package-lock.json

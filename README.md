@@ -137,15 +137,51 @@ define( 'FLUX_PLUGINS_COMMON_EXTERNAL_SERVICE_TIMEOUT', 360 );
 define( 'FLUX_PLUGINS_COMMON_DISABLE_CACHE', true );
 ```
 
+### Webpack dev server port registry
+
+Each plugin with a React admin bundle must use a **unique** `devServer.port` so multiple plugins can run webpack dev servers simultaneously. **This table is the single source of truth** — update it whenever you add a plugin or change a port.
+
+| Port | Plugin slug | Directory | Status |
+|------|-------------|-----------|--------|
+| 3000 | `flux-media-optimizer` | `flux-media-optimizer` | In use |
+| 3001 | `flux-ai-gutenberg-page-builder` | `flux-ai-gutenberg-page-builder` | Reserved (no `devServer` block yet) |
+| 3002 | `flux-ai-media-alt-creator` | `flux-ai-media-alt-creator` | In use |
+| 3003 | `flux-ai-media-alt-creator-pro` | `flux-ai-media-alt-creator-pro` | In use |
+| 3004 | `flux-one` | `flux-one-command-bar` | In use |
+| 3005 | `flux-fixer` | `flux-fixer` | In use |
+| 3006 | `flux-cta` | `flux-cta` | In use |
+| 3007 | `flux-blog-audit` | `flux-blog-audit` | In use |
+| 3000 | `flux-unused-media-cleaner` | `flux-unused-media-cleaner` | **Conflict** with Media Optimizer — reassign to 3008 |
+
+**Next available port:** 3008 (verify the table first).
+
+**Plugins without a webpack dev server** (no port assignment):
+
+- `flux-accessibility-audit-scanner`
+- `flux-form-accessibility-audit-scanner`
+- `flux-image-optimization-audit-scanner`
+- `flux-license-renewal-manager`
+
+`flux-plugins-common` uses `npm run dev` (watch mode) without a dev server — no port row.
+
+**When adding a new plugin:**
+
+1. Pick the next unused port from the table (currently **3008**).
+2. Set `devServer.port` in the plugin's `webpack.config.js`.
+3. Add a row to this table in this README.
+4. Set `FLUX_{PREFIX}_DEV_SCRIPT_BASE` in local `wp-config.php` to match (e.g. `http://localhost:3007`).
+5. Do **not** use port **3000** without checking the table — it is webpack's default and is already assigned (and collides with Unused Media Cleaner).
+
 ### Optional local dev script base (wp-config only)
 
-React admin bundles ship as built files under `assets/js/dist/`. For local webpack hot reload, each plugin may support an **optional** constant defined **only** in the site's `wp-config.php` (never in plugin bootstrap or release zips).
+React admin bundles ship as built files under `assets/js/dist/`. For local webpack hot reload, each plugin may support an **optional** constant defined **only** in the site's `wp-config.php` (never in plugin bootstrap or release zips). See [Webpack dev server port registry](#webpack-dev-server-port-registry) for assigned ports.
 
 **Naming convention:** `FLUX_{PLUGIN_PREFIX}_DEV_SCRIPT_BASE`
 
 Examples:
 
 - `FLUX_ONE_DEV_SCRIPT_BASE` — [flux-one-command-bar](https://github.com/stratease/flux-one-command-bar) (reference implementation)
+- `FLUX_BLOG_AUDIT_DEV_SCRIPT_BASE` — flux-blog-audit
 - `FLUX_MEDIA_OPTIMIZER_DEV_SCRIPT_BASE` — [flux-media-optimizer](https://github.com/stratease/flux-media-optimizer)
 
 **Gate (all required):**
@@ -162,6 +198,7 @@ Example (local machine only):
 
 ```php
 // wp-config.php — not shipped in the plugin
+// Use the port from the Webpack dev server port registry table.
 define( 'FLUX_MEDIA_OPTIMIZER_DEV_SCRIPT_BASE', 'http://localhost:3000' );
 ```
 
@@ -194,8 +231,8 @@ Plugins that ship this library (via Composer and Strauss into `vendor-prefixed/`
 - [`bin/build-plugin.sh`](bin/build-plugin.sh) — rsync from the plugin working tree into `wporg/trunk/` (or a temp tree) for zips and SVN.
 - [`bin/deploy-plugin.sh`](bin/deploy-plugin.sh) — commit `wporg/trunk/` to SVN and create version tags (run **after** `build-plugin.sh`).
 - [`bin/fix-bin-wrappers.php`](bin/fix-bin-wrappers.php) — rewrites Composer `vendor/bin/*` shims when Strauss removes `vendor/stratease/flux-plugins-common` (required for `delete_vendor_packages`; see [Composer bin wrappers](#composer-bin-wrappers-build--deploy)).
-- [`bin/plugin-dist-rsync-excludes.txt`](bin/plugin-dist-rsync-excludes.txt) — **single source of truth** for rsync `--exclude` patterns (dev dependencies, `tests/` including WorDBless `tests/wordpress/` core copy, maps, PHPUnit files, `audit-*.md`, etc.). Edit this file when a new dev-only path must never ship.
-- [`bin/verify-plugin-distribution.sh`](bin/verify-plugin-distribution.sh) — optional gate: performs the same filtered copy to a temp directory and fails if `phpunit.xml.dist` or `audit-*.md` appear under the simulated distribution tree.
+- [`bin/plugin-dist-rsync-excludes.txt`](bin/plugin-dist-rsync-excludes.txt) — **single source of truth** for rsync `--exclude` patterns (dev dependencies, `tests/` including WorDBless `tests/wordpress/` core copy, maps, PHPUnit files, `audit-*.md`, the entire Strauss-copied `vendor-prefixed/stratease/flux-plugins-common/src/assets` tree, etc.). Edit this file when a new dev-only path must never ship.
+- [`bin/verify-plugin-distribution.sh`](bin/verify-plugin-distribution.sh) — optional gate: performs the same filtered copy to a temp directory and fails if `phpunit.xml.dist`, `audit-*.md`, `*.map`, or `vendor-prefixed/stratease/flux-plugins-common/src/assets` appear under the simulated distribution tree.
 
 ### Release workflow (from a plugin root)
 
@@ -231,7 +268,7 @@ Run the verifier from a plugin root (example):
 
 - Declare **GPL-2.0-or-later** (or compatible) for the **whole** plugin, including prefixed vendor code, in the plugin header and `readme.txt`.
 - Document **external services** (API endpoints, data sent) accurately in `readme.txt` if the shipped code calls out to third-party or first-party hosted services.
-- Do not ship **development-only** files (tests and WorDBless `tests/wordpress/` from Composer, source maps, audit notes, local tooling) in the WordPress.org zip; rely on `plugin-dist-rsync-excludes.txt` and the verifier before tagging a release.
+- Do not ship **development-only** files (tests and WorDBless `tests/wordpress/` from Composer, source maps, audit notes, local tooling, or the Strauss-copied common asset tree under `vendor-prefixed/…/src/assets`) in the WordPress.org zip; rely on `plugin-dist-rsync-excludes.txt` and the verifier before tagging a release. Runtime common assets ship only from the host plugin’s `src/assets/common/` copy.
 - User-facing strings must not imply payment unlocks **bundled** plugin code (see [docs/WPORG_COMPLIANCE.md](docs/WPORG_COMPLIANCE.md)).
 
 ### WordPress.org compliance (integrators)
@@ -285,7 +322,7 @@ Integrating plugins use **three separate trees** for the common library:
 | Location | Role | Shipped in WP.org zip? |
 |----------|------|------------------------|
 | `vendor/stratease/flux-plugins-common/` | Composer install + Strauss **input** (dev/CI only) | **No** (excluded by `plugin-dist-rsync-excludes.txt`) |
-| `vendor-prefixed/stratease/flux-plugins-common/` | Strauss-prefixed **PHP** (`YourPlugin\FluxPlugins\Common\…`) | **Yes** (PHP only; exclude bundled JS sources/webpack files via rsync excludes) |
+| `vendor-prefixed/stratease/flux-plugins-common/` | Strauss-prefixed **PHP** (`YourPlugin\FluxPlugins\Common\…`) | **Yes** (PHP only; exclude the entire `src/assets` tree plus webpack/package files via rsync excludes — runtime assets live in `src/assets/common/`) |
 | `src/assets/common/` in each plugin | Runtime **static** assets (`js/dist`, `images`) passed to `FluxPlugins::init()` | **Yes** (`dist` + `images` only) |
 
 **JavaScript source** (`src/assets/js/src/`) lives only in **this** repository (or a monorepo sibling checkout). Plugin webpack aliases `@flux-plugins-common` to that path at build time; it is not copied into each plugin.
@@ -417,7 +454,7 @@ your-plugin/
         └── flux-plugins-common/ # Prefixed PHP (+ dev-only asset tree)
 ```
 
-`src/assets/common/` is what `MenuService` enqueues at runtime. Include it in your plugin zip; exclude `src/assets/common/js/src` if it was ever committed (see `plugin-dist-rsync-excludes.txt`).
+`src/assets/common/` is what `MenuService` enqueues at runtime. Include `js/dist` and `images` in your plugin zip; exclude `src/assets/common/js/src` if it was ever committed, and never ship `vendor-prefixed/stratease/flux-plugins-common/src/assets` (see `plugin-dist-rsync-excludes.txt`).
 
 ### Backwards Compatibility
 
@@ -516,7 +553,7 @@ To add a new plugin to the registry, edit `MenuService::init_plugin_registry()`:
 // For an active plugin:
 $this->add_plugin_to_registry(
     'flux-new-plugin',
-    __( 'New Plugin', I18n::domain() ),
+    __( 'New Plugin', I18n::domain() ), // Short display name (drop "Flux " prefix)
     __( 'Description of the new plugin.', I18n::domain() ),
     'flux-new-plugin/flux-new-plugin.php', // Plugin file path
     'admin.php?page=flux-new-plugin',        // Admin URL
@@ -542,6 +579,55 @@ $this->add_plugin_to_registry(
 
 This guide walks through integrating a new Flux Plugin with the common library, using Flux Media Optimizer as a reference implementation.
 
+### Plugin naming and branding
+
+Flux plugins use consistent naming across several surfaces. Follow these rules for every new plugin.
+
+#### WordPress plugin full name (`Plugin Name` header and `readme.txt` title)
+
+Append `by Flux Plugins` to the official product name. Reference: [flux-media-optimizer](https://github.com/stratease/flux-media-optimizer).
+
+**With descriptor (preferred when the product has a subtitle):**
+
+```php
+/**
+ * Plugin Name: Flux Media Optimizer – Image & Video Optimization by Flux Plugins
+ */
+```
+
+Use an en-dash (`–`) between the product name and descriptor.
+
+**Without descriptor:**
+
+```php
+/**
+ * Plugin Name: Flux Fixer by Flux Plugins
+ */
+```
+
+Also set:
+
+- `Author: Flux Plugins`
+- `Author URI: https://fluxplugins.com`
+
+The `readme.txt` title must match the `Plugin Name` header.
+
+#### Flux Suite admin submenu (`MenuService::register_submenu_page` title)
+
+Drop the `Flux ` prefix. Use the primary product name only.
+
+| Full product name | Submenu title |
+|-------------------|---------------|
+| Flux Media Optimizer | Media Optimizer |
+| Flux One | One |
+| Flux Fixer | Fixer |
+
+**In-app UI** (`PageLayout` titles and similar headings) is **not** covered by this rule — those may use fuller branding.
+
+#### WordPress.org compliance
+
+All Flux plugins must follow the [WordPress.org Plugin Guidelines](https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/). See also [WordPress.org packaging and bundled library](#wordpressorg-packaging-and-bundled-library) and [docs/WPORG_COMPLIANCE.md](docs/WPORG_COMPLIANCE.md).
+
 ### PHP Initialization
 
 #### 1. Main Plugin File Setup
@@ -551,7 +637,7 @@ In your plugin's main PHP file (e.g., `your-plugin.php`), initialize the common 
 ```php
 <?php
 /**
- * Plugin Name: Your Plugin Name
+ * Plugin Name: Flux Example Plugin by Flux Plugins
  * ...
  */
 
@@ -625,7 +711,7 @@ class Plugin {
         // Register your plugin-specific submenu page
         $menu_service->register_submenu_page(
             'your-plugin-slug',                    // Page slug
-            __( 'Your Plugin', 'your-plugin' ),    // Page title
+            __( 'Example Plugin', 'your-plugin' ), // Submenu title — drop "Flux " prefix
             [ $this, 'render_main_page' ],         // Callback
             'manage_options',                       // Capability
             1                                       // Placement (1 = first submenu)
@@ -1094,7 +1180,7 @@ Here's a complete example based on Flux Media Optimizer:
 ```php
 <?php
 /**
- * Plugin Name: Your Plugin Name
+ * Plugin Name: Flux Example Plugin by Flux Plugins
  * ...
  */
 

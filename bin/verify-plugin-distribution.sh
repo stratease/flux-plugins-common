@@ -61,15 +61,25 @@ rsync -a --exclude-from="$RSYNC_EXCLUDES_FILE" "$PLUGIN_DIR/" "$TEMP_DIR/"
 
 ERRORS=0
 
+# Fail on PHPUnit/audit artifacts, source maps, and the Strauss-copied common asset tree
+# (runtime assets must ship only under src/assets/common/).
 while IFS= read -r -d '' path; do
     rel="${path#$TEMP_DIR/}"
     echo "❌ Forbidden path in distribution tree: $rel"
     ERRORS=$((ERRORS + 1))
-done < <(find "$TEMP_DIR" \( -name 'phpunit.xml.dist' -o -name 'audit-*.md' \) -print0 2>/dev/null || true)
+done < <(
+    find "$TEMP_DIR" \( \
+        -name 'phpunit.xml.dist' \
+        -o -name 'audit-*.md' \
+        -o -name '*.map' \
+        -o -path '*/vendor-prefixed/stratease/flux-plugins-common/src/assets' \
+        -o -path '*/vendor-prefixed/stratease/flux-plugins-common/src/assets/*' \
+    \) -print0 2>/dev/null || true
+)
 
 if [ "$ERRORS" -gt 0 ]; then
-    echo "❌ verify-plugin-distribution: $ERRORS forbidden file(s). Update plugin-dist-rsync-excludes.txt or remove files from the plugin tree."
+    echo "❌ verify-plugin-distribution: $ERRORS forbidden path(s). Update plugin-dist-rsync-excludes.txt or remove files from the plugin tree."
     exit 1
 fi
 
-echo "✅ verify-plugin-distribution: no forbidden phpunit/audit paths under simulated trunk."
+echo "✅ verify-plugin-distribution: no forbidden phpunit/audit/map/prefixed-common-asset paths under simulated trunk."
